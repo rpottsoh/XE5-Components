@@ -1,0 +1,79 @@
+package TMSI30;
+
+{$R *.res}
+{$R 'CompactLogixComms.dcr'}
+{$R 'PLCMonitor.dcr'}
+{$R 'SNHDChecker.dcr'}
+{$R 'TrippliteUPSMonitor.dcr'}
+{$R 'DsFancyButton.dcr'}
+{$R 'CollapsePanel.dcr'}
+{$R 'EXCELS.dcr'}
+{$R 'SLGgraph.dcr'}
+{$R 'DAP_Inspector.dcr'}
+{$R 'Sensotec_Commands.dcr'}
+{$R 'Interface_Commands.dcr'}
+{$R 'DAPLib_TLB.dcr'}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$DEFINE DELPHIXE}
+{$DEFINE Package_Build}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'TMSI DIO Package'}
+{$DESIGNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  VCL,
+  S404_r,
+  E111_R120,
+  L208_r140,
+  rtl,
+  designide,
+  vclactnband,
+  vclx,
+  xmlrtl,
+  vcldb,
+  dbrtl,
+  O408_r,
+  AsyncPro;
+
+contains
+  CompactLogixComms,
+  PLCMonitor,
+  SNHDChecker,
+  TrippliteUPSMonitor,
+  DsFancyButton,
+  CollapsePanel {,
+  DTOOLS},
+  FloatingWindow {,
+  RackCtls},
+  SLGgraph,
+  DAP_Inspector,
+  TMSIReg in 'TMSIReg.pas',
+  Sensotec_Commands,
+  Interface_Commands,
+  MicroLogixComms in 'MicroLogixComms.pas',
+  DAPLib_TLB in '..\Imports\DAPLib_TLB.pas';
+
+end.
