@@ -48,6 +48,9 @@ const
   WM_HSU_SpectraAnalysis_CLOSING     = MSG_Base + 5001; // HSU Spectra Analysis Closing
   WM_RR_ANALYSIS_CLOSING             = MSG_Base + 6001; // RR Analysis Software Closing
   WM_SpectraPAC_Setup_Wizard_Closing = MSG_Base + 7001; // SpectraPAC Setup Wizard Closing, AKA Uniformaty Wizard
+  WM_CoarseRoad_RunScreen_Closing    = MSG_Base + 8001; // SpectarPACcr Run Screen Closing
+  CustomSSCTestRunScreenClosing_Msg  = MSG_Base + 9001; // Stead State Cornering Run Screen Closing
+  SAFTestRunScreenClosing_Msg        = MSG_Base + 10001; // Sine Angle Frequence Test Run Screen Closing  
 
 type
   // The following call back identifiers need to be sent back to the calling program to
