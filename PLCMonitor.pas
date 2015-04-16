@@ -216,6 +216,23 @@ Type
                Constructor Create;
  end; // TAnalogInputModule
 
+ TRTDAnalogInputModule = class(TObject)
+               ModuleNumber          : Integer;
+               ModuleType            : Integer;
+               ModuleError           : Boolean;
+               ModuleWords           : TModuleWords;
+               ChannelDataValue      : array[0..3] of Double;
+               ChannelStatus         : array[0..3] of Boolean;
+               ChannelOverRangeFlag  : array[0..3] of Boolean;
+               ChannelUnderRangeFlag : array[0..3] of Boolean;
+               FChannelOpenCircuitFlag : Array[0..3] of boolean;
+               procedure SetChannelOCFlag(Channel : Byte; Value : Boolean);
+               function GetChannelOCFlag(Channel : Byte) : Boolean;
+             public
+               Constructor Create;
+               property ChannelOpenCircuitFlag[Channel : Byte] : Boolean read GetChannelOCFlag write SetChannelOCFlag;
+ end;  // TRTDAnalogInputModule
+
  TAnalogOutputModule = class(TObject)
              ModuleNumber : Integer;
              ModuleType : Integer; // 0 Input 1 Output
@@ -1258,6 +1275,20 @@ begin
   FillChar(ChannelUnderRangeFlag,SizeOf(ChannelUnderRangeFlag),#0);
 end; // TAnalogInputModule.Create
 
+Constructor TRTDAnalogInputModule.Create;
+begin
+  inherited Create;
+  ModuleNumber := 0;
+  ModuleType := 0;
+  ModuleError := False;
+  FillChar(ModuleWords,SizeOf(ModuleWords),#0);
+  FillChar(ChannelDataValue,SizeOf(ChannelDataValue),#0);
+  FillChar(ChannelStatus,SizeOf(ChannelStatus),#0);
+  FillChar(ChannelOverRangeFlag,SizeOf(ChannelOverRangeFlag),#0);
+  FillChar(ChannelUnderRangeFlag,SizeOf(ChannelUnderRangeFlag),#0);
+  FillChar(FChannelOpenCircuitFlag,SizeOf(FChannelOpenCircuitFlag),#0);
+end; // TRTDAnalogInputModule.Create
+
 Constructor TAnalogOutputModule.Create;
 begin
   inherited Create;
@@ -1270,6 +1301,20 @@ begin
   FillChar(ChannelOverRangeFlag,SizeOf(ChannelOverRangeFlag),#0);
   FillChar(ChannelUnderRangeFlag,SizeOf(ChannelUnderRangeFlag),#0);
 end; // TAnalogOutputModule.Create
+
+procedure TRTDAnalogInputModule.SetChannelOCFlag(Channel : Byte; Value : Boolean);
+begin
+  if (Channel in [Low(FChannelOpenCircuitFlag)..High(FChannelOpenCircuitFlag)]) then
+    FChannelOpenCircuitFlag[Channel] := Value;
+end; // TRTDAnalogInputModule.SetChannelURFlag
+
+function TRTDAnalogInputModule.GetChannelOCFlag(Channel : Byte) : Boolean;
+begin
+  if (Channel in [Low(FChannelOpenCircuitFlag)..High(FChannelOpenCircuitFlag)]) then
+    Result := FChannelOpenCircuitFlag[Channel]
+  else
+    Result := False;
+end; // TRTDAnalogInputModule.GetChannelURFlag
 
 function TPLCMonitor.GetEnabled : boolean;
 begin
@@ -2111,6 +2156,7 @@ var
   lDigitalInputModule : TDigitalInputModule;
   lDigitalOutputModule : TDigitalOutputModule;
   lAnalogInputModule : TAnalogInputModule;
+  lRTDAnalogInputModule : TRTDAnalogInputModule;
   lAnalogOutputModule : TAnalogOutputModule;
   lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
 begin
@@ -2129,6 +2175,18 @@ begin
           FPLCReadThread.Start;
       end; // For i
     end; // If
+    // Format of the file is as follows:
+    // 1. CurSubKey = 'PLC'
+    //    This record contains the config data for the entire PLC including
+    //    - IP address
+    //    - Number of words of the various PLC files to read.  Files are read
+    //      sequentially:
+    //      'B3'   - PC Request Bits (Latches, etc.)
+    //      'I'    - Input data:  Processor, Digital, Analog
+    //      'O'    - Output data: Processor, Digital, Analog
+    //      'S'    - Processor Status
+    //    - Watchdog timer config data
+    //    - Number of modules installed (including processor module)
     FConfigurationFile := lFileName;
     INIFile := TStRegINI.Create(FConfigurationFile,True);
     with INIFile do
@@ -2156,20 +2214,33 @@ begin
                   lMainModule := TPLCMainModule.Create;
                   lMainModule.ModuleType := ModuleType[i];
                   lMainModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  // Start Digital Input Data word for the Processor module should be set to 0
+                  // End Digital Input Data word should be set to 3
+                  // ** Data included in the 'I' (Inputs) file **
                   lMainModule.DigitalInputModuleWords[0,0] := ReadInteger('StartDigitalInputWord',0);
                   lMainModule.DigitalInputModuleWords[0,1] := ReadInteger('EndDigitalInputWord',0);
+                  // Start Digital Output Data word for the Processor module should be set to 0
+                  // End Digital Output Data word should be set to 3
+                  // ** Data included in the 'O' (Outputs) file **
                   lMainModule.DigitalOutputModuleWords[0,0] := ReadInteger('StartDigitalOutputDataWord',0);
                   lMainModule.DigitalOutputModuleWords[0,1] := ReadInteger('EndDigitalOutputDataWord',0);
-                  // Analog
+                  // Stsrt Analog Input Data word for the Processor module should be set to 4
+                  // End Analog Input Data word should be set to 7
+                  // ** Data included in the 'I' (Inputs) file **
                   lMainModule.AnalogInputModuleWords[0,0] := ReadInteger('StartAnalogInputWord',0);
                   lMainModule.AnalogInputModuleWords[0,1] := ReadInteger('EndAnalogInputWord',0);
                   lMainModule.AnalogInputModuleWords[1,0] := ReadInteger('StartAnalogInputStatusWord',0);
                   lMainModule.AnalogInputModuleWords[1,1] := ReadInteger('EndAnalogInputStatusWord',0);
+                  // Stsrt Analog Output Data word for the Processor module should be set to 4
+                  // End Analog Output Data word should be set to 5
+                  // ** Data included in the 'O' (Outputs) file **
                   lMainModule.AnalogOutputModuleWords[0,0] := ReadInteger('StartAnalogOutputDataWord',0);
                   lMainModule.AnalogOutputModuleWords[0,1] := ReadInteger('EndAnalogOutputDataWord',0);
                   lMainModule.AnalogOutputModuleWords[1,0] := ReadInteger('StartAnalogOutputStatusWord',0);
                   lMainModule.AnalogOutputModuleWords[1,1] := ReadInteger('EndAnalogOutputStatusWord',0);
-                  // Request Bits
+                  // Start Request Bits word for the Processor module should be set to 0
+                  // End Request Bits word should be set to [# of words in the 'B3' PLC file minus 1]
+                  // ** Data included in the 'B3' (PC Request Bits) file **
                   lMainModule.RequestBits_ModuleWords[0,0] := ReadInteger('StartRequestBitsWord',0);
                   lMainModule.RequestBits_ModuleWords[0,1] := ReadInteger('EndRequestBitsWord',0);
                   Modules[i] := lMainModule;
@@ -2178,6 +2249,9 @@ begin
                   lDigitalInputModule := TDigitalInputModule.Create;
                   lDigitalInputModule.ModuleType := ModuleType[i];
                   lDigitalInputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  // Start and End Digital Input Data words for the Expansion modules should be set to the same number
+                  // Look at the 'I' (Inputs) file on the PLC for the value based on slot (module number)
+                  // ** Data included in the 'I' (Inputs) file **
                   lDigitalInputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
                   lDigitalInputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
                   lDigitalInputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
@@ -2188,6 +2262,9 @@ begin
                   lDigitalOutputModule := TDigitalOutputModule.Create;
                   lDigitalOutputModule.ModuleType := ModuleType[i];
                   lDigitalOutputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  // Start and End Digital Output Data words for the Expansion modules should be set to the same number
+                  // Look at the 'O' (Outputs) file on the PLC for the value based on slot (module number)
+                  // ** Data included in the 'O' (Outputs) file **
                   lDigitalOutputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
                   lDigitalOutputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
                   lDigitalOutputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
@@ -2198,6 +2275,11 @@ begin
                   lAnalogInputModule := TAnalogInputModule.Create;
                   lAnalogInputModule.ModuleType := ModuleType[i];
                   lAnalogInputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  // Look at the 'I' (Inputs) file on the PLC for the Start Analog Input Data word based on slot (module number)
+                  // End Analog Input Data word should be set to [Start Analog Input Data word + 3]
+                  // Start Analog Input Status word should be set to [Start Analog Input Data word + 4]
+                  // End Analog Input Status word should be set to [Start Analog Input Data word + 6]
+                  // ** Data and Status included in the 'I' (Inputs) file **
                   lAnalogInputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
                   lAnalogInputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
                   lAnalogInputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
@@ -2208,6 +2290,9 @@ begin
                   lAnalogOutputModule := TAnalogOutputModule.Create;
                   lAnalogOutputModule.ModuleType := ModuleType[i];
                   lAnalogOutputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  // Look at the 'O' (Outputs) file on the PLC for the Start Analog Output Data word based on slot (module number)
+                  // End Analog Output Data word should be set to [Start Analog Output Data word + 3]
+                  // ** Data and Status included in the 'O' (Outputs) file **
                   lAnalogOutputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
                   lAnalogOutputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
                   lAnalogOutputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
@@ -2218,12 +2303,30 @@ begin
                   lRelayedDigitalOutputModule := TRelayedDigitalOutputModule.Create;
                   lRelayedDigitalOutputModule.ModuleType := ModuleType[i];
                   lRelayedDigitalOutputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  // Start and End Digital Output Data words for the Expansion modules should be set to the same number
+                  // Look at the 'O' (Outputs) file on the PLC for the value based on slot (module number)
+                  // ** Data included in the 'O' (outputs) file **
                   lRelayedDigitalOutputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
                   lRelayedDigitalOutputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
                   lRelayedDigitalOutputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
                   lRelayedDigitalOutputModule.ModuleWords[1,1] := ReadInteger('EndStatusWord',0);
                   Modules[i] := lRelayedDigitalOutputModule;
                 end; // 5
+            6 : begin // RTD Analog Input Module
+                  lRTDAnalogInputModule := TRTDAnalogInputModule.Create;
+                  lRTDAnalogInputModule.ModuleType := ModuleType[i];
+                  lRTDAnalogInputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  // Look at the 'I' (Inputs) file on the PLC for the Start RTD Analog Input Data word based on slot (module number)
+                  // End RTD Analog Input Data word should be set to [Start RTDAnalog Input Data word + 3]
+                  // Start RTD Analog Input Status word should be set to [Start RTD Analog Input Data word + 4]
+                  // End RTD Analog Input Status word should be set to [Start RTD Analog Input Data word + 6]
+                  // ** Data and Status included in the 'I' (Inputs) file **
+                  lRTDAnalogInputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
+                  lRTDAnalogInputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
+                  lRTDAnalogInputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
+                  lRTDAnalogInputModule.ModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  Modules[i] := lRTDAnalogInputModule;
+                end; // 6
           end; // Case
         end; // For i
       end; // If
@@ -2274,6 +2377,7 @@ var
   lDigitalInputModule : TDigitalInputModule;
   lDigitalOutputModule : TDigitalOutputModule;
   lAnalogInputModule : TAnalogInputModule;
+  lRTDAnalogInputModule : TRTDAnalogInputModule;
   lAnalogOutputModule : TAnalogOutputModule;
   lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
 begin
@@ -2289,6 +2393,11 @@ begin
               lMainModule := (FModules[i] as TPLCMainModule);
               with lMainModule do
               begin
+                // The MicroLogix 1400 processor module includes some or all of the following inputs and outputs:
+                //   1.  20 Digital Inputs     = I:0.0 through I:0.3 (I:0.0 - 16 bits and I:0.1 - 4 bits are valid)
+                //   2.  4 Analog Inputs       = I:0.4 through I:0.7
+                //   3.  12 Digital Outputs    = O:0.0 through O:0.3 (O:0.0 - 12 bits are valid)
+                //   4.  2 Analog Outputs      = O:0.4 through O:0.5
                 lStartDataWord := DigitalInputModuleWords[0,0];
                 lEndDataWord := DigitalInputModuleWords[0,1];
                 lStartAnalogDataWord := AnalogInputModuleWords[0,0];
@@ -2315,6 +2424,8 @@ begin
                 AnalogOutputData[0] := FOutputWords[lStartAnalogDataWord];
                 AnalogOutputData[1] := FOutputWords[lEndAnalogDataWord];
 
+                // Request Bits are used to control and monitor logic at the PLC
+                // The "B3" file in the PLC holds this data
                 lStartDataWord := RequestBits_ModuleWords[0,0];
                 lEndDataWord := RequestBits_ModuleWords[0,1];
                 lChannel1 := 0;
@@ -2326,6 +2437,33 @@ begin
                     inc(lChannel1);
                   end; // If
                 end; // For j
+                // There are 66 words of status read from the PLC.
+                //   The "S" file in the PLC holds this data
+                //   This status data includes the following data:
+                //   S:1/0 - 1/4   = Controller Mode
+                //                   0  - Remote download in progress
+                //                   1  - Remote Program mode
+                //                   3  - Remote Suspend mode
+                //                   6  - Remote Run
+                //                   7  - Remote Test - continuous mode
+                //                   8  - Remote Test - single scan mode
+                //                   16 - Download in progress
+                //                   17 - Program mode
+                //                   27 - Suspend mode
+                //                   30 - Run mode
+                //   S:1/5         = Forces Enabled
+                //   S:1/6         = Forces installed
+                //   S:1/8         = Fault override at power-up
+                //   S:1/9         = Startup protection fault
+                //   S:1/10        = Load memory module on error or default program
+                //   S:1/11        = Load memory module always
+                //   S:1/12        = Power-up behavior
+                //   S:1/13        = Major error halted
+                //   S:1/14        = Future access (OEM lock)
+                //   S:1/15        = First scan bit
+                //   S:5/2         = Control register error
+                //   S:5/11        = Processor battery low
+                //   S:6           = Major Error Code
                 lProcessorMode := 0;
                 lMajorError := 0;
                 for k := 0 to 15 do
@@ -2346,7 +2484,7 @@ begin
               end; // With
             end; // 0
         1 : begin // Digital Input Module
-              lDigitalInputModule := (FModules[i] as TDigitalInputModule);                  
+              lDigitalInputModule := (FModules[i] as TDigitalInputModule);
               with lDigitalInputModule do
               begin
                 lStartDataWord := ModuleWords[0,0];
@@ -2365,6 +2503,12 @@ begin
               lAnalogInputModule := (FModules[i] as TAnalogInputModule);
               with lAnalogInputModule do
               begin
+                // The Analog Input expansion module (IF4) provides 7 words of data:
+                //   Words 0-3 : Channels 0-3 data
+                //   Word 4    : bits 0-3             = Channels 0-3 status
+                //   Word 5    : bits 15,13,11,9      = Channels 0-3 Under-Range status
+                //             : bits 14,12,10,8      = Channels 0-3 Over-Range status
+                //   Word 6    : (IF4 only) Reserved
                 lStartDataWord := ModuleWords[0,0];
                 lEndDataWord := ModuleWords[0,1];
                 lStartStatusWord := ModuleWords[1,0];
@@ -2384,11 +2528,13 @@ begin
                   lModuleError := lModuleError or ((FInputWords[lStartStatusWord + 1] Shr k and 1 <> 0));
                   if (k mod 2) = 0 then
                   begin
+                    // Even numbered bits = Over-range
                     ChannelOverRangeFlag[UCount] := ((FInputWords[lStartStatusWord + 1] Shr k and 1 <> 0));
                     inc(UCount);
                   end
                   else
                   begin
+                    // Odd numbered bits = Under-range
                     ChannelUnderRangeFlag[OCount] := ((FInputWords[lStartStatusWord + 1] Shr k and 1 <> 0));
                     inc(OCount);
                   end; // If
@@ -2405,6 +2551,11 @@ begin
                 lStartStatusWord := ModuleWords[1,0];
                 UCount := 0;
                 OCount := 0;
+                // The Analog Output expansion module provides 4 output words and 2 input words of data:
+                //   Output Words 0-3 :                   = Channels 0-3 data
+                //   Input Word 0     : bits 0-3          = Channels 0-3 status
+                //   Input Word 1     : bits 7,5,3,1      = Channels 0-3 Under-Range status
+                //                    : bits 6,4,2,0      = Channels 0-3 Over-Range status
                 ChannelDataValue[0] := FOutputWords[lStartDataWord];
                 ChannelDataValue[1] := FOutputWords[lStartDataWord + 1];
                 ChannelDataValue[2] := FOutputWords[lStartDataWord + 2];
@@ -2420,11 +2571,13 @@ begin
                   lModuleError := lModuleError or ((FInputWords[lStartStatusWord + 1] Shr k and 1) <> 0); // Input section holds the status of the output module
                   if (k mod 2) <> 0 then
                   begin
+                    // Even numbered bits = Over-range
                     ChannelOverRangeFlag[UCount] := (FInputWords[lStartStatusWord + 1] Shr k and 1 <> 0);
                     Inc(UCount);
                   end
                   else
                   begin
+                    // Odd numbered bits = Under-range
                     ChannelUnderRangeFlag[OCount] := (FInputWords[lStartStatusWord + 1] Shr k and 1 <> 0);
                     Inc(OCount);
                   end; // If
@@ -2440,6 +2593,57 @@ begin
                 RelayedDigitalOutputData := FOutputBits[lStartDataWord];
               end; // With
             end; // 5
+        6 : begin // RTD Analog Input Module
+              lRTDAnalogInputModule := (FModules[i] as TRTDAnalogInputModule);
+              with lRTDAnalogInputModule do
+              begin
+                lStartDataWord := ModuleWords[0,0];
+                lEndDataWord := ModuleWords[0,1];
+                lStartStatusWord := ModuleWords[1,0];
+                // The RTD Analog Input expansion module (IR4) provides 6 words of data:
+                //   Words 0-3 :                      = Channels 0-3 data
+                //   Word 4    : bits 0-3             = Channels 0-3 status
+                //             : bits 8-11 (IR4 only) = Channels 0-3 Open-Circuit status
+                //   Word 5    : bits 15,13,11,9      = Channels 0-3 Under-Range status
+                //             : bits 14,12,10,8      = Channels 0-3 Over-Range status
+                ChannelDataValue[0] := FInputWords[lStartDataWord];
+                ChannelDataValue[1] := FInputWords[lStartDataWord + 1];
+                ChannelDataValue[2] := FInputWords[lStartDataWord + 2];
+                ChannelDataValue[3] := FInputWords[lEndDataWord];
+                for k := 0 to 3 do
+                begin
+                  ChannelStatus[k] := (FInputWords[lStartStatusWord] Shr k and 1) <> 0;
+                  lModuleError := lModuleError or ChannelStatus[k];
+                end; // For k
+                j := 0;
+                for k := 8 to 11 do
+                begin
+                  ChannelOpenCircuitFlag[j] := (FInputWords[lStartStatusWord] Shr k and 1) <> 0;
+                  lModuleError := lModuleError or ChannelOpenCircuitFlag[j];
+                  inc(j);
+                end; // For k
+                j := 0;
+                for k := 15 downto 8 do
+                begin
+                  lModuleError := lModuleError or ((FInputWords[lStartStatusWord + 1] Shr k and 1 <> 0));
+                  if (k mod 2) = 0 then
+                  begin
+                    // Even numbered bits = Over-range
+                    ChannelOverRangeFlag[j] := ((FInputWords[lStartStatusWord + 1] Shr k and 1 <> 0));
+                    if j < 3 then
+                    begin
+                      inc(j);
+                    end;
+                  end
+                  else
+                  begin
+                    // Odd numbered bits = Under-range
+                    ChannelUnderRangeFlag[j] := ((FInputWords[lStartStatusWord + 1] Shr k and 1 <> 0));
+                  end; // If
+                end; // For k
+                ModuleError := lModuleError;
+              end; // With
+            end; // 6
       end; // Case
     end; // For i
     if Not Terminated then
@@ -2456,6 +2660,7 @@ begin
   begin
     if Assigned(FPLCReadThread) then
     begin
+      // See LoadPLCConfiguration procedure for the format information on this file
       Modules := FPLCReadThread.Modules;
       ModuleType := FPLCReadThread.ModuleTypes;
       FModuleCount := FPLCReadThread.ModuleCount;
@@ -2532,14 +2737,22 @@ begin
                     WriteInteger('StartStatusWord',(Modules[i] as TAnalogOutputModule).ModuleWords[1,0]);
                     WriteInteger('EndStatusWord',(Modules[i] as TAnalogOutputModule).ModuleWords[1,1]);
                   end; // 4
-            5 : begin // Relayed Digital Ouput Module
-                  WriteInteger('ModuleType',(Modules[i] as TRelayedDigitalOutputModule).ModuleType);
-                  WriteInteger('ModuleNumber',(Modules[i] as TRelayedDigitalOutputModule).ModuleNumber);
-                  WriteInteger('StartDataWord',(Modules[i] as TRelayedDigitalOutputModule).ModuleWords[0,0]);
-                  WriteInteger('EndDataWord',(Modules[i] as TRelayedDigitalOutputModule).ModuleWords[0,1]);
-                  WriteInteger('StartStatusWord',(Modules[i] as TRelayedDigitalOutputModule).ModuleWords[1,0]);
-                  WriteInteger('EndStatusWord',(Modules[i] as TRelayedDigitalOutputModule).ModuleWords[1,1]);
-                end; // 5
+              5 : begin // Relayed Digital Ouput Module
+                    WriteInteger('ModuleType',(Modules[i] as TRelayedDigitalOutputModule).ModuleType);
+                    WriteInteger('ModuleNumber',(Modules[i] as TRelayedDigitalOutputModule).ModuleNumber);
+                    WriteInteger('StartDataWord',(Modules[i] as TRelayedDigitalOutputModule).ModuleWords[0,0]);
+                    WriteInteger('EndDataWord',(Modules[i] as TRelayedDigitalOutputModule).ModuleWords[0,1]);
+                    WriteInteger('StartStatusWord',(Modules[i] as TRelayedDigitalOutputModule).ModuleWords[1,0]);
+                    WriteInteger('EndStatusWord',(Modules[i] as TRelayedDigitalOutputModule).ModuleWords[1,1]);
+                  end; // 5
+              6 : begin // RTD Analog Input Module
+                    WriteInteger('ModuleType',(Modules[i] as TRTDAnalogInputModule).ModuleType);
+                    WriteInteger('ModuleNumber',(Modules[i] as TRTDAnalogInputModule).ModuleNumber);
+                    WriteInteger('StartDataWord',(Modules[i] as TRTDAnalogInputModule).ModuleWords[0,0]);
+                    WriteInteger('EndDataWord',(Modules[i] as TRTDAnalogInputModule).ModuleWords[0,1]);
+                    WriteInteger('StartStatusWord',(Modules[i] as TRTDAnalogInputModule).ModuleWords[1,0]);
+                    WriteInteger('EndStatusWord',(Modules[i] as TRTDAnalogInputModule).ModuleWords[1,1]);
+                  end; // 3
             end; // Case
             Modules[i].Free;
             Modules[i] := nil;

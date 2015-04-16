@@ -2442,6 +2442,18 @@ begin
       if Assigned(FPLCReadThread) then
         FPLCReadThread.Start;
     end; // If
+    // Format of the file is as follows:
+    // 1. CurSubKey = 'PLC'
+    //    This record contains the config data for the entire PLC including
+    //    - IP address
+    //    - Number of words of the various PLC files to read.  Files are read
+    //      sequentially:
+    //      'N7'   - Needs to include PC Request Bits (Latches, etc.), Inputs, Outputs and Expansion Module Status
+    //                 (There is a subroutine in the PLC program that copies the PC Request Bit,
+    //                 Input, Output and Expansion Module Status data into the N7 file)
+    //      'S'    - Processor Status
+    //    - Watchdog timer config data
+    //    - Number of modules installed (including processor module)
     FConfigurationFile := lFileName;
     OptionalParams := TStringList.Create;
     INIFile := TStRegINI.Create(FConfigurationFile,True);
@@ -2475,20 +2487,36 @@ begin
                       lMainModule := TPLCMainModule.Create;
                       lMainModule.ModuleType := ModuleType[i];
                       lMainModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                      // Start Digital Input Data word for the Processor module should be set based on
+                      //   the offset to this data in the 'N7' file
+                      // End Digital Input Data word should be set to [Start Digital Input Data word + 3]
+                      // ** Data included in the 'N7' file **
                       lMainModule.DigitalInputModuleWords[0,0] := ReadInteger('StartDigitalInputWord',0);
                       lMainModule.DigitalInputModuleWords[0,1] := ReadInteger('EndDigitalInputWord',0);
+                      // Start Digital Output Data word for the Processor module should be set based on
+                      //   the offset to this data in the 'N7' file
+                      // End Digital Output Data word should be set to [Start Digital Output Data word + 3]
+                      // ** Data included in the 'N7' file **
                       lMainModule.DigitalOutputModuleWords[0,0] := ReadInteger('StartDigitalOutputDataWord',0);
                       lMainModule.DigitalOutputModuleWords[0,1] := ReadInteger('EndDigitalOutputDataWord',0);
-                      // Analog
+                      // Stsrt Analog Input Data word for the Processor module should be set to [Start Digital Input Data word + 4]
+                      // End Analog Input Data word should be set to [Start Digital Input Data word + 7]
+                      // ** Data included in the 'N7' file **
                       lMainModule.AnalogInputModuleWords[0,0] := ReadInteger('StartAnalogInputWord',0);
                       lMainModule.AnalogInputModuleWords[0,1] := ReadInteger('EndAnalogInputWord',0);
                       lMainModule.AnalogInputModuleWords[1,0] := ReadInteger('StartAnalogInputStatusWord',0);
                       lMainModule.AnalogInputModuleWords[1,1] := ReadInteger('EndAnalogInputStatusWord',0);
+                      // Stsrt Analog Output Data word for the Processor module should be set to [Start Digital Output Data word + 4]
+                      // End Analog Output Data word should be set to [Start Digital Output data word + 5]
+                      // ** Data included in the 'N7' file **
                       lMainModule.AnalogOutputModuleWords[0,0] := ReadInteger('StartAnalogOutputDataWord',0);
                       lMainModule.AnalogOutputModuleWords[0,1] := ReadInteger('EndAnalogOutputDataWord',0);
                       lMainModule.AnalogOutputModuleWords[1,0] := ReadInteger('StartAnalogOutputStatusWord',0);
                       lMainModule.AnalogOutputModuleWords[1,1] := ReadInteger('EndAnalogOutputStatusWord',0);
-                      // Request Bits
+                      // Start Request Bits word for the Processor module should be set based on
+                      //   the offset to this data in the 'N7' file
+                      // End Request Bits word should be set to [Start Request Bits word + # of words in the 'B3' PLC file minus 1]
+                      // ** Data included in the 'N7' file **
                       lMainModule.RequestBits_ModuleWords[0,0] := ReadInteger('StartRequestBitsWord',0);
                       lMainModule.RequestBits_ModuleWords[0,1] := ReadInteger('EndRequestBitsWord',0);
                       Modules[i] := lMainModule;
@@ -2497,6 +2525,9 @@ begin
                       lDigitalInputModule := TDigitalInputModule.Create;
                       lDigitalInputModule.ModuleType := ModuleType[i];
                       lDigitalInputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                      // Start and End Digital Input Data words for the Expansion modules should be set to the same number
+                      // Look at the 'N7' file on the PLC for the value based on slot (module number)
+                      // ** Data included in the 'N7' file **
                       lDigitalInputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
                       lDigitalInputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
                       lDigitalInputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
@@ -2507,6 +2538,10 @@ begin
                       lDigitalOutputModule := TDigitalOutputModule.Create;
                       lDigitalOutputModule.ModuleType := ModuleType[i];
                       lDigitalOutputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                      // Start and End Digital Output Data words for the Expansion modules should be set to the same number
+                      // Look at the 'N7' file on the PLC for the Start Analog Input Data word based on slot (module number)
+                      // Look at the 'N7' file on the PLC for the value based on slot (module number)
+                      // ** Data included in the 'N7' file **
                       lDigitalOutputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
                       lDigitalOutputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
                       lDigitalOutputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
@@ -2517,6 +2552,11 @@ begin
                       lAnalogInputModule := TAnalogInputModule.Create;
                       lAnalogInputModule.ModuleType := ModuleType[i];
                       lAnalogInputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
+                      // Look at the 'N7' file on the PLC for the Start Analog Input Data word based on slot (module number)
+                      // End Analog Input Data word should be set to [Start Analog Input Data word + 3]
+                      // Start Analog Input Status word should be set to [Start Analog Input Data word + 4]
+                      // End Analog Input Status word should be set to [Start Analog Input Data word + 6]
+                      // ** Data and Status included in the 'N7' file **
                       lAnalogInputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
                       lAnalogInputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
                       lAnalogInputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
