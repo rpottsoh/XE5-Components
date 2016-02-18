@@ -232,6 +232,7 @@ begin
   FUnitsFont := FTitleFont;
   FTitle.Font := FTitleFont;
   FUnits.Font := FUnitsFont;
+  DoubleBuffered := true;
 end;
 
 //******************* FtoC *************************
