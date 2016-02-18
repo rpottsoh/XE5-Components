@@ -495,7 +495,7 @@ Type
    procedure SetInputSize(Value : Integer);
    function GetInputSize : Integer;
    procedure SetOutputSize(Value : Integer);
-   function GetOutputSize : Integer; 
+   function GetOutputSize : Integer;
    procedure SetStatusSize(Value : Integer);
    function GetStatusSize : Integer;
    function GetWriteFault : Boolean;
@@ -532,6 +532,7 @@ Type
    function CheckModuleConfigutaion : Boolean;
  public
  {Public Declarations}
+   procedure StartReadThread;
    Constructor Create(AOwner : TComponent); Override;
    Destructor Destroy; Override;
    procedure InitializePLC;
@@ -1422,6 +1423,12 @@ begin
   else
     Result := False;
 end; // TPLCMonitor.GetReadFault
+
+
+procedure TPLCMonitor.StartReadThread;
+begin
+  FPLCReadThread.Start;
+end;
 
 procedure TPLCMonitor.SetEnabled(Value : Boolean);
 begin
