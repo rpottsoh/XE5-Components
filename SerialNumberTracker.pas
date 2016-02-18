@@ -1,5 +1,9 @@
 {$ifndef Package_Build}
-{$I Conditionals.inc}
+{$ifdef systest}
+   {$I ..\conditionals.inc}
+{$else}
+   {$I conditionals.inc}
+{$endif}
 {$endif}
 unit SerialNumberTracker;
 
