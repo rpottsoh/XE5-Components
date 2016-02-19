@@ -11,6 +11,38 @@ type
   TUnits = (uCustom, uPounds, uKilograms, uNewtons, uMM, uCM, uIN, uPSI, uKPA,
             uMPH, uKPH, uIN3pSEC, uCM3pSEC, uGPM, uLPM, uDegrees, uINLBS, uFTLBS, uKGM, uNM, udegF,
             udegC,uBar,uMI,uKM);
+//
+//  TUnits definitions:
+//
+//  ORDINAL    TYPE LABEL     UNITS           MEASUREMENT
+//  =======    ==========     =====           ===========
+//    0        uCustom
+//    1        uPounds        Lbs             Force
+//    2        uKilograms     Kg              Force
+//    3        uNewtons       N               Force
+//    4        uMM            mm              Length
+//    5        uCM            cm              Length
+//    6        uIN            in              Length
+//    7        uPSI           psi             Pressure
+//    8        uKPA           Kpa             Pressure
+//    9        uMPH           mph             Speed
+//   10        uKPH           Kph             Speed
+//   11        uIN3pSEC       cubic in/sec    Flow
+//   12        uCM3pSEC       cubic cm/sec    Flow
+//   13        uGPM           gallons/min     Flow
+//   14        uLPM           liters/min      Flow
+//   15        uDegrees       degrees         Angular distance
+//   16        uINLBS         in-Lbs          Torque
+//   17        uFTLBS         ft-Lbs          Torque
+//   18        uKGM           Kg-m            Torque
+//   19        uNM            N-m             Torque
+//   20        udegF          Fahrenheit      Temperature
+//   21        udegC          Celsius         Temperature
+//   22        uBar           Bar             Pressure
+//   23        uMI            miles           Distance
+//   24        uKM            kilometers      Distance
+
+
   TCustomDVM = class(TCustomPanel)
   private
     { Private declarations }
