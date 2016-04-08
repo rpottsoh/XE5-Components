@@ -45,7 +45,7 @@ unit PLCMonitor;
 interface
 
 uses Windows, Forms, Messages, SysUtils, Classes, StdCtrls, ExtCtrls, ABCTLLib_TLB,
-     OleCtrls,StRegINI;
+     StRegINI, Spring.Collections;
 
 const
   MaximumModules = 20;
@@ -63,76 +63,152 @@ Type
  TWordsArray = array[0..99] of TWord;
  TModuleWords = array[0..1,0..1] of integer; // Index zero is the location of the first module word the second index holds the location of the last module word
 
- TPLCWritePacket = Class(TObject)
-                       FSize : LongInt;
-                       FFileType : ShortString;
-                       FWordNumber : LongInt;
-                       FBitPosition : Integer;
-                       FWriteBit : Boolean;
-                       FWriteWord : Boolean;
-                       FBitToWrite : Boolean;
-                       FWordToWrite : Smallint;
-                       FTransactionPhase : LongInt; // -1 = Just Created, 0 = Pending, 1 = Validated, 2 = Sent, 3 = Error
-                       FTransmitAttempts : LongInt;
-                     public
-                       Constructor Create;
-                       property Size : LongInt read FSize write FSize;
-                       property FileType : ShortString read FFileType write FFileType;
-                       property WordNumber : LongInt read FWordNumber write FWordNumber;
-                       property BitPosition : LongInt read FBitPosition write FBitPosition;
-                       property WriteBit : Boolean read FWriteBit write FWriteBit;
-                       property WriteWord : Boolean read FWriteWord write FWriteWord;
-                       property BitToWrite : Boolean read FBitToWrite write FBitToWrite;
-                       property WordToWrite : SmallInt read FWordToWrite write FWordToWrite;
-                       property TransactionPhase : LongInt read FTransactionPhase write FTransactionPhase;
-                       property TransmitAttempts : LongInt read FTransmitAttempts write FTransmitAttempts;
+ IPLCPacket = interface(IInvokable)
+   procedure SetSize(aValue: LongInt);
+   function GetSize: LongInt;
+   procedure SetFileType(aValue: ShortString);
+   function GetFileType: ShortString;
+   procedure SetWordNumber(aValue: Longint);
+   function GetWordNumber: LongInt;
+   procedure SetBitPosition(aValue: Longint);
+   function GetBitPosition: longInt;
+   procedure SetWriteBit(aValue: Boolean);
+   function GetWriteBit: Boolean;
+   procedure SetWriteWord(aValue: Boolean);
+   function GetWriteWord: Boolean;
+   procedure SetBitToWrite(aValue: Boolean);
+   function GetBitToWrite: Boolean;
+   procedure SetWordToWrite(aValue: Smallint);
+   function GetWordToWrite: Smallint;
+   procedure SetTransactionPhase(aValue: Longint);
+   function GetTransactionPhase: Longint;
+   procedure SetTransmitAttempts(aValue: Longint);
+   function GetTransmitAttempts: Longint;
+   procedure SetReadBit(aValue: Boolean);
+   function GetReadBit: Boolean;
+   procedure SetReadWord(aValue: Boolean);
+   function GetReadWord: Boolean;
+   procedure SetBitRead(aValue: Boolean);
+   function GetBitRead: Boolean;
+   procedure SetWordRead(aValue: Smallint);
+   function GetWordRead: Smallint;
+   property Size : LongInt read GetSize write SetSize;
+   property FileType : ShortString read GetFileType write SetFileType;
+   property WordNumber : LongInt read GetWordNumber write SetWordNumber;
+   property BitPosition : LongInt read GetBitPosition write SetBitPosition;
+   property WriteBit : Boolean read GetWriteBit write SetWriteBit;
+   property WriteWord : Boolean read GetWriteWord write SetWriteWord;
+   property BitToWrite : Boolean read GetBitToWrite write SetBitToWrite;
+   property WordToWrite : SmallInt read GetWordToWrite write SetWordToWrite;
+   property TransactionPhase : LongInt read GetTransactionPhase write SetTransactionPhase;
+   property TransmitAttempts : LongInt read GetTransmitAttempts write SetTransmitAttempts;
+   property ReadBit : Boolean read GetReadBit write SetReadBit;
+   property ReadWord : Boolean read GetReadWord write SetReadWord;
+   property BitRead : Boolean read GetBitRead write SetBitRead;
+   property WordRead : SmallInt read GetWordRead write SetWordRead;
+ end;
+
+ TBasePLCPacket = class(TInterfacedObject, IPLCPacket)
+   private
+     FSize : LongInt;
+     FFileType : ShortString;
+     FWordNumber : LongInt;
+     FBitPosition : Integer;
+     FWriteBit : Boolean;
+     FWriteWord : Boolean;
+     FBitToWrite : Boolean;
+     FWordToWrite : Smallint;
+     FTransactionPhase : LongInt; // -1 = Just Created, 0 = Pending, 1 = Validated, 2 = Sent, 3 = Error
+     FTransmitAttempts : LongInt;
+     FReadBit : Boolean;
+     FReadWord : Boolean;
+     FBitRead : Boolean;
+     FWordRead : Smallint;
+     procedure SetSize(aValue: LongInt);
+     function GetSize: LongInt;
+     procedure SetFileType(aValue: ShortString);
+     function GetFileType: ShortString;
+     procedure SetWordNumber(aValue: Longint);
+     function GetWordNumber: LongInt;
+     procedure SetBitPosition(aValue: Longint);
+     function GetBitPosition: longInt;
+     procedure SetWriteBit(aValue: Boolean);
+     function GetWriteBit: Boolean;
+     procedure SetWriteWord(aValue: Boolean);
+     function GetWriteWord: Boolean;
+     procedure SetBitToWrite(aValue: Boolean);
+     function GetBitToWrite: Boolean;
+     procedure SetWordToWrite(aValue: Smallint);
+     function GetWordToWrite: Smallint;
+     procedure SetTransactionPhase(aValue: Longint);
+     function GetTransactionPhase: Longint;
+     procedure SetTransmitAttempts(aValue: Longint);
+     function GetTransmitAttempts: Longint;
+     procedure SetReadBit(aValue: Boolean);
+     function GetReadBit: Boolean;
+     procedure SetReadWord(aValue: Boolean);
+     function GetReadWord: Boolean;
+     procedure SetBitRead(aValue: Boolean);
+     function GetBitRead: Boolean;
+     procedure SetWordRead(aValue: Smallint);
+     function GetWordRead: Smallint;
+     property WriteBit : Boolean read GetWriteBit write SetWriteBit;
+     property WriteWord : Boolean read GetWriteWord write SetWriteWord;
+     property BitToWrite : Boolean read GetBitToWrite write SetBitToWrite;
+     property WordToWrite : SmallInt read GetWordToWrite write SetWordToWrite;
+     property TransmitAttempts : LongInt read GetTransmitAttempts write SetTransmitAttempts;
+     property ReadBit : Boolean read GetReadBit write SetReadBit;
+     property ReadWord : Boolean read GetReadWord write SetReadWord;
+     property BitRead : Boolean read GetBitRead write SetBitRead;
+     property WordRead : SmallInt read GetWordRead write SetWordRead;
+   public
+     Constructor Create; virtual;
+     property Size : LongInt read GetSize write SetSize;
+     property FileType : ShortString read GetFileType write SetFileType;
+     property WordNumber : LongInt read GetWordNumber write SetWordNumber;
+     property BitPosition : LongInt read GetBitPosition write SetBitPosition;
+     property TransactionPhase : LongInt read GetTransactionPhase write SetTransactionPhase;
+ end;
+
+ TPLCWritePacket = Class(TBasePLCPacket)
+   public
+     property WriteBit;
+     property WriteWord;
+     property BitToWrite;
+     property WordToWrite;
+     property TransmitAttempts;
  end; // TPLCWritePacket
 
  TPLCWritePacketRecord = record
-                           Size : Integer;
-                           FileType : ShortString;
-                           WordNumber : Integer;
-                           BitPosition : Integer;
-                           WriteBit : Boolean;
-                           WriteWord : Boolean;
-                           BitToWrite : Boolean;
-                           WordToWrite : Smallint;
-                           TransactionPhase : LongInt;
+   Size : Integer;
+   FileType : ShortString;
+   WordNumber : Integer;
+   BitPosition : Integer;
+   WriteBit : Boolean;
+   WriteWord : Boolean;
+   BitToWrite : Boolean;
+   WordToWrite : Smallint;
+   TransactionPhase : LongInt;
  end; // TPLCWritePacketRecord
 
- TPLCReadPacket = Class(TObject)
-                       FSize : Integer;
-                       FFileType : ShortString;
-                       FWordNumber : Integer;
-                       FBitPosition : Integer;
-                       FReadBit : Boolean;
-                       FReadWord : Boolean;
-                       FBitRead : Boolean;
-                       FWordRead : Smallint;
-                       FTransactionPhase : LongInt; // -1 = Just Created, 0 = Pending, 1 = Sent, 2 = Returned
-                     public
-                       Constructor Create;
-                       property Size : LongInt read FSize write FSize;
-                       property FileType : ShortString read FFileType write FFileType;
-                       property WordNumber : LongInt read FWordNumber write FWordNumber;
-                       property BitPosition : LongInt read FBitPosition write FBitPosition;
-                       property ReadBit : Boolean read FReadBit write FReadBit;
-                       property ReadWord : Boolean read FReadWord write FReadWord;
-                       property BitRead : Boolean read FBitRead write FBitRead;
-                       property WordRead : SmallInt read FWordRead write FWordRead;
-                       property TransactionPhase : LongInt read FTransactionPhase write FTransactionPhase;
+ TPLCReadPacket = Class(TBasePLCPacket)
+   public
+     property ReadBit;
+     property ReadWord;
+     property BitRead;
+     property WordRead;
  end; // TReadPacket
 
  TPLCReadPacketRec = record
-                       Size : Integer;
-                       FileType : ShortString;
-                       WordNumber : Integer;
-                       BitPosition : Integer;
-                       ReadBit : Boolean;
-                       ReadWord : Boolean;
-                       BitRead : Boolean;
-                       WordRead : Smallint;
-                       TransactionPhase : LongInt;
+   Size : Integer;
+   FileType : ShortString;
+   WordNumber : Integer;
+   BitPosition : Integer;
+   ReadBit : Boolean;
+   ReadWord : Boolean;
+   BitRead : Boolean;
+   WordRead : Smallint;
+   TransactionPhase : LongInt;
  end; // TReadPacketRec
 
 // TProcessorInfo = packed record
@@ -140,132 +216,373 @@ Type
 // end; // TProcessorInfo
 
  TModule = record // Generic Module container
-             ModuleNumber : Integer;
-             ModuleType : Integer; // 0 Input 1 Output
-             ModuleWords : TModuleWords;
-             ChannelDataValue : array[0..3] of Double;
-             ChannelSign : array[0..3] of Integer;
-             ChannelStatus : array[0..3] of boolean;
-             ChannelOverRangeFlag : array[0..3] of boolean;
-             ChannelUnderRangeFlag : array[0..3] of boolean;
+   ModuleNumber : Integer;
+   ModuleType : Integer; // 0 Input 1 Output
+   ModuleWords : TModuleWords;
+   ChannelDataValue : array[0..3] of Double;
+   ChannelSign : array[0..3] of Integer;
+   ChannelStatus : array[0..3] of boolean;
+   ChannelOverRangeFlag : array[0..3] of boolean;
+   ChannelUnderRangeFlag : array[0..3] of boolean;
  end; // TModule
 
- TPLCMainModule = class(TObject)
-               ModuleNumber : Integer;
-               ModuleType : Integer; // 0 Main 1 Input 2 Output
-               ModuleError : Boolean;
-               MajorErrorCode : integer;
-               ProcessorMode : Integer;
-               ForcedIO,
-               ControlRegisterError,
-               BatteryOK : Boolean;
-               DigitalInputModuleWords,
-               DigitalOutputModuleWords,
-               AnalogInputModuleWords,
-               AnalogOutputModuleWords,
-               RequestBits_ModuleWords : TModuleWords;
-               DigitalInputData : array[0..3] of TBitArray;
-               AnalogInputData : array[0..3] of Double;
-               DigitalOutputData : array[0..3] of TBitArray;
-               AnalogOutputData : array[0..1] of Double;
-               Request_Bits_Status : array[0..9] of TBitArray;
-             public
-               Constructor Create;
- end; // TPLCModule
+ IPLCMainModule = interface(IInvokable)
+   function GetModuleNumber: integer;
+   procedure SetModuleNumber(aValue: integer);
+   function GetModuleType: integer;
+   procedure SetModuleType(aValue: integer); // 0 Main 1 Input 2 Output
+   function GetModuleError: Boolean;
+   procedure SetModuleError(aValue: Boolean);
+   function GetMajorErrorCode: integer;
+   procedure SetMajorErrorCode(aValue: integer);
+   function GetProcessorMode: integer;
+   procedure SetProcessorMode(aValue: integer);
+   function GetForcedIO: Boolean;
+   procedure SetForcedIO(aValue: Boolean);
+   function GetControlRegisterError: Boolean;
+   procedure SetControlRegisterError(aValue: Boolean);
+   function GetBatteryOK: Boolean;
+   procedure SetBatteryOK(aValue: Boolean);
+   function GetDigitalInputModuleWords: TModuleWords;
+   procedure SetDigitalInputModuleWords(aValue: TModuleWords);
+   function GetDigitalOutputModuleWords: TModuleWords;
+   procedure SetDigitalOutputModuleWords(aValue: TModuleWords);
+   function GetAnalogInputModuleWords: TModuleWords;
+   procedure SetAnalogInputModuleWords(aValue: TModuleWords);
+   function GetAnalogOutputModuleWords: TModuleWords;
+   procedure SetAnalogOutputModuleWords(aValue: TModuleWords);
+   function GetRequestBits_ModuleWords: TModuleWords;
+   procedure SetRequestBits_ModuleWords(aValue: TModuleWords);
+   function GetDigitalInputData(aIndex: integer): TBitArray;
+   procedure SetDigitalInputData(aIndex: integer; aValue: TBitArray);
+   function GetAnalogInputData(aIndex: integer): Double;
+   procedure SetAnalogInputData(aIndex: integer; aValue: Double);
+   function GetDigitalOutputData(aIndex: integer): TBitArray;
+   procedure SetDigitalOutputData(aIndex: integer; aValue: TBitArray);
+   function GetAnalogOutputData(aIndex: integer): Double;
+   procedure SetAnalogOutputData(aIndex: integer; aValue: Double);
+   function GetRequest_Bits_Status(aIndex: integer): TBitArray;
+   procedure SetRequest_Bits_Status(aIndex: integer; aValue: TBitArray);
+   function GetRequest_Bits_Status_Size: integer;
+   function GetLow_AnalogInputData: integer;
+   function GetHigh_AnalogInputData: integer;
+   function GetLow_AnalogOutputData: integer;
+   function GetHigh_AnalogOutputData: integer;
+   function GetLow_DigitalInputData: integer;
+   function GetHigh_DigitalInputData: integer;
+   function GetLow_DigitalOutputData: integer;
+   function GetHigh_DigitalOutputData: integer;
+   property ModuleNumber: Integer read GetModuleNumber write SetModuleNumber;
+   property ModuleType : Integer read GetModuleType write SetModuleType; // 0 Main 1 Input 2 Output
+   property ModuleError : Boolean read GetModuleError write SetModuleError;
+   property MajorErrorCode : integer read GetMajorErrorCode write SetMajorErrorCode;
+   property ProcessorMode : Integer read GetProcessorMode write SetProcessorMode;
+   property ForcedIO: boolean read GetForcedIO write SetForcedIO;
+   property ControlRegisterError: boolean read GetControlRegisterError write SetControlRegisterError;
+   property BatteryOK : Boolean read GetBatteryOK write SetBatteryOK;
+   property DigitalInputModuleWords: TModuleWords read GetDigitalInputModuleWords write SetDigitalInputModuleWords;
+   property DigitalOutputModuleWords : TModuleWords read GetDigitalOutputModuleWords write SetDigitalOutputModuleWords;
+   property AnalogInputModuleWords : TModuleWords read GetAnalogInputModuleWords write SetAnalogInputModuleWords;
+   property AnalogOutputModuleWords : TModuleWords read GetAnalogOutputModuleWords write SetAnalogOutputModuleWords;
+   property RequestBits_ModuleWords : TModuleWords read GetRequestBits_ModuleWords write SetRequestBits_ModuleWords;
+   property DigitalInputData[aIndex: integer]: TBitArray read GetDigitalInputData write SetDigitalInputData;
+   property Low_DigitalInputData: integer read GetLow_DigitalInputData;
+   property High_DigitalInputData: integer read GetHigh_DigitalInputData;
+   property AnalogInputData[aIndex: integer]: Double read GetAnalogInputData write SetAnalogInputData;
+   property Low_AnalogInputData: integer read GetLow_AnalogInputData;
+   property High_AnalogInputData: integer read GetHigh_AnalogInputData;
+   property DigitalOutputData[aIndex: integer]: TBitArray read GetDigitalOutputData write SetDigitalOutputData;
+   property Low_DigitalOutputData: integer read GetLow_DigitalOutputData;
+   property High_DigitalOutputData: integer read GetHigh_DigitalOutputData;
+   property AnalogOutputData[aIndex: integer]: Double read GetAnalogOutputData write SetAnalogOutputData;
+   property Low_AnalogOutputData: integer read GetLow_AnalogOutputData;
+   property High_AnalogOutputData: integer read GetHigh_AnalogOutputData;
+   property Request_Bits_Status[aIndex: integer]: TBitArray read GetRequest_Bits_Status write SetRequest_Bits_Status;
+   property Request_Bits_Status_Size: integer read GetRequest_Bits_Status_Size;
+ end;
 
- TDigitalInputModule = class(TObject)
-               ModuleNumber : Integer;
-               ModuleType : Integer; // 0 Main 1 Input 2 Output
-               ModuleError : Boolean;
-               ModuleWords : TModuleWords;
-               DigitalInputData : TBitArray;
-             public
-               Constructor Create;
+ TPLCMainModule = class(TInterfacedObject, IPLCMainModule)
+   private
+     FModuleNumber : Integer;
+     FModuleType : Integer; // 0 Main 1 Input 2 Output
+     FModuleError : Boolean;
+     FMajorErrorCode : integer;
+     FProcessorMode : Integer;
+     FForcedIO,
+     FControlRegisterError,
+     FBatteryOK : Boolean;
+     FDigitalInputModuleWords,
+     FDigitalOutputModuleWords,
+     FAnalogInputModuleWords,
+     FAnalogOutputModuleWords,
+     FRequestBits_ModuleWords : TModuleWords;
+     FDigitalInputData : array[0..3] of TBitArray;
+     FAnalogInputData : array[0..3] of Double;
+     FDigitalOutputData : array[0..3] of TBitArray;
+     FAnalogOutputData : array[0..1] of Double;
+     FRequest_Bits_Status : array[0..9] of TBitArray;
+     function GetModuleNumber: integer;
+     procedure SetModuleNumber(aValue: integer);
+     function GetModuleType: integer;
+     procedure SetModuleType(aValue: integer); // 0 Main 1 Input 2 Output
+     function GetModuleError: Boolean;
+     procedure SetModuleError(aValue: Boolean);
+     function GetMajorErrorCode: integer;
+     procedure SetMajorErrorCode(aValue: integer);
+     function GetProcessorMode: integer;
+     procedure SetProcessorMode(aValue: integer);
+     function GetForcedIO: Boolean;
+     procedure SetForcedIO(aValue: Boolean);
+     function GetControlRegisterError: Boolean;
+     procedure SetControlRegisterError(aValue: Boolean);
+     function GetBatteryOK: Boolean;
+     procedure SetBatteryOK(aValue: Boolean);
+     function GetDigitalInputModuleWords: TModuleWords;
+     procedure SetDigitalInputModuleWords(aValue: TModuleWords);
+     function GetDigitalOutputModuleWords: TModuleWords;
+     procedure SetDigitalOutputModuleWords(aValue: TModuleWords);
+     function GetAnalogInputModuleWords: TModuleWords;
+     procedure SetAnalogInputModuleWords(aValue: TModuleWords);
+     function GetAnalogOutputModuleWords: TModuleWords;
+     procedure SetAnalogOutputModuleWords(aValue: TModuleWords);
+     function GetRequestBits_ModuleWords: TModuleWords;
+     procedure SetRequestBits_ModuleWords(aValue: TModuleWords);
+     function GetDigitalInputData(aIndex: integer): TBitArray;
+     procedure SetDigitalInputData(aIndex: integer; aValue: TBitArray);
+     function GetAnalogInputData(aIndex: integer): Double;
+     procedure SetAnalogInputData(aIndex: integer; aValue: Double);
+     function GetDigitalOutputData(aIndex: integer): TBitArray;
+     procedure SetDigitalOutputData(aIndex: integer; aValue: TBitArray);
+     function GetAnalogOutputData(aIndex: integer): Double;
+     procedure SetAnalogOutputData(aIndex: integer; aValue: Double);
+     function GetRequest_Bits_Status(aIndex: integer): TBitArray;
+     procedure SetRequest_Bits_Status(aIndex: integer; aValue: TBitArray);
+     function GetRequest_Bits_Status_Size: integer;
+     function GetLow_AnalogInputData: integer;
+     function GetHigh_AnalogInputData: integer;
+     function GetLow_AnalogOutputData: integer;
+     function GetHigh_AnalogOutputData: integer;
+     function GetLow_DigitalInputData: integer;
+     function GetHigh_DigitalInputData: integer;
+     function GetLow_DigitalOutputData: integer;
+     function GetHigh_DigitalOutputData: integer;
+   public
+     Constructor Create;
+     property ModuleNumber: Integer read GetModuleNumber write SetModuleNumber;
+     property ModuleType : Integer read GetModuleType write SetModuleType; // 0 Main 1 Input 2 Output
+     property ModuleError : Boolean read GetModuleError write SetModuleError;
+     property MajorErrorCode : integer read GetMajorErrorCode write SetMajorErrorCode;
+     property ProcessorMode : Integer read GetProcessorMode write SetProcessorMode;
+     property ForcedIO: boolean read GetForcedIO write SetForcedIO;
+     property ControlRegisterError: boolean read GetControlRegisterError write SetControlRegisterError;
+     property BatteryOK : Boolean read GetBatteryOK write SetBatteryOK;
+     property DigitalInputModuleWords: TModuleWords read GetDigitalInputModuleWords write SetDigitalInputModuleWords;
+     property DigitalOutputModuleWords : TModuleWords read GetDigitalOutputModuleWords write SetDigitalOutputModuleWords;
+     property AnalogInputModuleWords : TModuleWords read GetAnalogInputModuleWords write SetAnalogInputModuleWords;
+     property AnalogOutputModuleWords : TModuleWords read GetAnalogOutputModuleWords write SetAnalogOutputModuleWords;
+     property RequestBits_ModuleWords : TModuleWords read GetRequestBits_ModuleWords write SetRequestBits_ModuleWords;
+     property DigitalInputData[aIndex: integer]: TBitArray read GetDigitalInputData write SetDigitalInputData;
+     property Low_DigitalInputData: integer read GetLow_DigitalInputData;
+     property High_DigitalInputData: integer read GetHigh_DigitalInputData;
+     property AnalogInputData[aIndex: integer]: Double read GetAnalogInputData write SetAnalogInputData;
+     property Low_AnalogInputData: integer read GetLow_AnalogInputData;
+     property High_AnalogInputData: integer read GetHigh_AnalogInputData;
+     property DigitalOutputData[aIndex: integer]: TBitArray read GetDigitalOutputData write SetDigitalOutputData;
+     property Low_DigitalOutputData: integer read GetLow_DigitalOutputData;
+     property High_DigitalOutputData: integer read GetHigh_DigitalOutputData;
+     property AnalogOutputData[aIndex: integer]: Double read GetAnalogOutputData write SetAnalogOutputData;
+     property Low_AnalogOutputData: integer read GetLow_AnalogOutputData;
+     property High_AnalogOutputData: integer read GetHigh_AnalogOutputData;
+     property Request_Bits_Status[aIndex: integer]: TBitArray read GetRequest_Bits_Status write SetRequest_Bits_Status;
+     property Request_Bits_Status_Size: integer read GetRequest_Bits_Status_Size;
+ end; // TPLCMainModule
+
+ IDigitalIOModule = interface(IInvokable)
+   function GetModuleNumber: Integer;
+   procedure SetModuleNumber(aValue: integer);
+   function GetModuleType: Integer;
+   procedure SetModuleType(aValue: integer); // 0 Input 1 Output
+   function GetModuleError: Boolean;
+   procedure SetModuleError(aValue: Boolean);
+   function GetModuleWords: TModuleWords;
+   procedure SetModuleWords(aValue: TModuleWords);
+   function GetDigitalOutputData: TBitArray;
+   procedure SetDigitalOutputData(aValue: TBitArray);
+   procedure SetDigitalInputData(aValue: TBitArray);
+   function GetDigitalInputData: TBitArray;
+   function GetRelayedDigitalOutputData: TBitArray;
+   procedure SetRelayedDigitalOutputData(aValue: TBitArray);
+   property ModuleNumber : Integer read GetModuleNumber write SetModuleNumber;
+   property ModuleType : Integer read GetModuleType write SetModuleType; // 0 Input 1 Output
+   property ModuleError : Boolean read GetModuleError write SetModuleError;
+   property ModuleWords : TModuleWords read GetModuleWords write SetModuleWords;
+   property DigitalOutputData : TBitArray read GetDigitalOutputData write SetDigitalOutputData;
+   property DigitalInputData : TBitArray read GetDigitalInputData write SetDigitalInputData;
+   property RelayedDigitalOutputData: TBitArray read GetRelayedDigitalOutputData write SetRelayedDigitalOutputData;
+ end;
+
+ TBaseDigitalIOModule = class(TInterfacedObject, IDigitalIOModule)
+    private
+       FModuleNumber : Integer;
+       FModuleType : Integer; // 0 Main 1 Input 2 Output
+       FModuleError : Boolean;
+       FModuleWords : TModuleWords;
+       FDigitalInputData : TBitArray;
+       FDigitalOutputData : TBitArray;
+       FRelayedDigitalOutputData: TBitArray;
+       function GetModuleNumber: Integer;
+       procedure SetModuleNumber(aValue: integer);
+       function GetModuleType: Integer;
+       procedure SetModuleType(aValue: integer); // 0 Input 1 Output
+       function GetModuleError: Boolean;
+       procedure SetModuleError(aValue: Boolean);
+       function GetModuleWords: TModuleWords;
+       procedure SetModuleWords(aValue: TModuleWords);
+       function GetDigitalOutputData: TBitArray;
+       procedure SetDigitalOutputData(aValue: TBitArray);
+       procedure SetDigitalInputData(aValue: TBitArray);
+       function GetDigitalInputData: TBitArray;
+       function GetRelayedDigitalOutputData: TBitArray;
+       procedure SetRelayedDigitalOutputData(aValue: TBitArray);
+       property DigitalOutputData : TBitArray read GetDigitalOutputData write SetDigitalOutputData;
+       property DigitalInputData : TBitArray read GetDigitalInputData write SetDigitalInputData;
+       property RelayedDigitalOutputData: TBitArray read GetRelayedDigitalOutputData write SetRelayedDigitalOutputData;
+    public
+       Constructor Create; virtual;
+       property ModuleNumber : Integer read GetModuleNumber write SetModuleNumber;
+       property ModuleType : Integer read GetModuleType write SetModuleType; // 0 Input 1 Output
+       property ModuleError : Boolean read GetModuleError write SetModuleError;
+       property ModuleWords : TModuleWords read GetModuleWords write SetModuleWords;
+ end;
+
+ TDigitalInputModule = class(TBaseDigitalIOModule)
+   public
+     property DigitalInputData;
  end; // TDigitalInputModule
 
- TDigitalOutputModule = class(TObject)
-               ModuleNumber : Integer;
-               ModuleType : Integer; // 0 Input 1 Output
-               ModuleError : Boolean;
-               ModuleWords : TModuleWords;
-               DigitalOutputData : TBitArray;
-             public
-               Constructor Create;
+ TDigitalOutputModule = class(TBaseDigitalIOModule)
+   public
+     property DigitalOutputData;
  end; // TDigitalOutputModule
 
- TRelayedDigitalOutputModule = class(TObject)
-                 ModuleNumber : Integer;
-                 ModuleType : Integer; // 0 Input 1 Output
-                 ModuleError : Boolean;
-                 ModuleWords : TModuleWords;
-                 RelayedDigitalOutputData : TBitArray;
-               public
-                 Constructor Create;
+ TRelayedDigitalOutputModule = class(TBaseDigitalIOModule)
+   public
+     property RelayedDigitalOutputData;
  end; // TRelayedDigitalOutputModule
 
- TAnalogInputModule = class(TObject)
-               ModuleNumber : Integer;
-               ModuleType : Integer; // 0 Input 1 Output
-               ModuleError : Boolean;
-               ModuleWords : TModuleWords;
-               ChannelDataValue : array[0..3] of Double;
-               ChannelStatus : array[0..3] of boolean;
-               ChannelOverRangeFlag : array[0..3] of boolean;
-               ChannelUnderRangeFlag : array[0..3] of boolean;
-             public
-               Constructor Create;
- end; // TAnalogInputModule
+ IAnalogModule = interface(IInvokable)
+   function GetModuleNumber: Integer;
+   procedure SetModuleNumber(aValue: integer);
+   function GetModuleType: Integer;
+   procedure SetModuleType(aValue: integer); // 0 Input 1 Output
+   function GetModuleError: Boolean;
+   procedure SetModuleError(aValue: Boolean);
+   function GetModuleWords: TModuleWords;
+   procedure SetModuleWords(aValue: TModuleWords);
+   function GetChannelDataValue(aIndex: integer): Double;
+   procedure SetChannelDataValue(aIndex: integer; aValue: Double);
+   function GetChannelStatus(aIndex: integer): Boolean;
+   procedure SetChannelStatus(aIndex: integer; aValue: Boolean);
+   function GetChannelOverRangeFlag(aIndex: integer): Boolean;
+   procedure SetChannelOverRangeFlag(aIndex: integer; aValue: Boolean);
+   function GetChannelUnderRangeFlag(aIndex: integer): Boolean;
+   procedure SetChannelUnderRangeFlag(aIndex: integer; aValue: Boolean);
+   function GetChannelOCFlag(Channel : Byte) : Boolean;
+   procedure SetChannelOCFlag(Channel : Byte; Value : Boolean);
+   function GetLow_ChannelDataValue: integer;
+   function GetHigh_ChannelDataValue: integer;
+//universal
+   property ModuleNumber: Integer read GetModuleNumber write SetModuleNumber;
+   property ModuleType: Integer read GetModuleType write SetModuleType; // 0 Input 1 Output
+   property ModuleError: Boolean read GetModuleError write SetModuleError;
+   property ModuleWords: TModuleWords read GetModuleWords write SetModuleWords;
+   property ChannelDataValue[aIndex: integer]: Double read GetChannelDataValue write SetChannelDataValue;
+   property ChannelStatus[aIndex: integer]: Boolean read GetChannelStatus write SetChannelStatus;
+   property ChannelOverRangeFlag[aIndex: integer]: boolean read GetChannelOverRangeFlag write SetChannelOverRangeFlag;
+   property ChannelUnderRangeFlag[aIndex: integer]: boolean read GetChannelUnderRangeFlag write SetChannelUnderRangeFlag;
+//RTD Only
+   property Low_ChannelDataValue: integer read GetLow_ChannelDataValue;
+   property High_ChannelDataValue: integer read GetHigh_ChannelDataValue;
+   property ChannelOpenCircuitFlag[Channel : Byte] : Boolean read GetChannelOCFlag write SetChannelOCFlag;
+ end;
 
- TRTDAnalogInputModule = class(TObject)
-               ModuleNumber          : Integer;
-               ModuleType            : Integer;
-               ModuleError           : Boolean;
-               ModuleWords           : TModuleWords;
-               ChannelDataValue      : array[0..3] of Double;
-               ChannelStatus         : array[0..3] of Boolean;
-               ChannelOverRangeFlag  : array[0..3] of Boolean;
-               ChannelUnderRangeFlag : array[0..3] of Boolean;
-               FChannelOpenCircuitFlag : Array[0..3] of boolean;
-               procedure SetChannelOCFlag(Channel : Byte; Value : Boolean);
-               function GetChannelOCFlag(Channel : Byte) : Boolean;
-             public
-               Constructor Create;
-               property ChannelOpenCircuitFlag[Channel : Byte] : Boolean read GetChannelOCFlag write SetChannelOCFlag;
+ TBaseAnalogModule = class(TInterfacedObject, IAnalogModule)
+   private
+     FModuleNumber : Integer;
+     FModuleType : Integer; // 0 Input 1 Output
+     FModuleError : Boolean;
+     FModuleWords : TModuleWords;
+     FChannelDataValue : TArray<Double>;
+     FChannelStatus : TArray<Boolean>;//array[0..3] of boolean;
+     FChannelOverRangeFlag : TArray<Boolean>;//array[0..3] of boolean;
+     FChannelUnderRangeFlag : TArray<Boolean>;//array[0..3] of boolean;
+     FChannelOpenCircuitFlag : TArray<Boolean>;//Array[0..3] of boolean;
+     function GetModuleNumber: Integer;
+     procedure SetModuleNumber(aValue: integer);
+     function GetModuleType: Integer;
+     procedure SetModuleType(aValue: integer); // 0 Input 1 Output
+     function GetModuleError: Boolean;
+     procedure SetModuleError(aValue: Boolean);
+     function GetModuleWords: TModuleWords;
+     procedure SetModuleWords(aValue: TModuleWords);
+     function GetChannelDataValue(aIndex: integer): Double;
+     procedure SetChannelDataValue(aIndex: integer; aValue: Double);
+     function GetChannelStatus(aIndex: integer): Boolean;
+     procedure SetChannelStatus(aIndex: integer; aValue: Boolean);
+     function GetChannelOverRangeFlag(aIndex: integer): Boolean;
+     procedure SetChannelOverRangeFlag(aIndex: integer; aValue: Boolean);
+     function GetChannelUnderRangeFlag(aIndex: integer): Boolean;
+     procedure SetChannelUnderRangeFlag(aIndex: integer; aValue: Boolean);
+     function GetChannelOCFlag(Channel : Byte) : Boolean;
+     procedure SetChannelOCFlag(Channel : Byte; Value : Boolean);
+     function GetLow_ChannelDataValue: integer;
+     function GetHigh_ChannelDataValue: integer;
+     //RTD Only
+     property Low_ChannelDataValue: integer read GetLow_ChannelDataValue;
+     property High_ChannelDataValue: integer read GetHigh_ChannelDataValue;
+     property ChannelOpenCircuitFlag[Channel : Byte] : Boolean read GetChannelOCFlag write SetChannelOCFlag;
+   public
+     constructor create; virtual;
+     property ModuleNumber: Integer read GetModuleNumber write SetModuleNumber;
+     property ModuleType: Integer read GetModuleType write SetModuleType; // 0 Input 1 Output
+     property ModuleError: Boolean read GetModuleError write SetModuleError;
+     property ModuleWords: TModuleWords read GetModuleWords write SetModuleWords;
+     property ChannelDataValue[aIndex: integer]: Double read GetChannelDataValue write SetChannelDataValue;
+     property ChannelStatus[aIndex: integer]: Boolean read GetChannelStatus write SetChannelStatus;
+     property ChannelOverRangeFlag[aIndex: integer]: boolean read GetChannelOverRangeFlag write SetChannelOverRangeFlag;
+     property ChannelUnderRangeFlag[aIndex: integer]: boolean read GetChannelUnderRangeFlag write SetChannelUnderRangeFlag;
+ end;
+
+ TAnalogInputModule = TBaseAnalogModule;
+ TAnalogOutputModule = TBaseAnalogModule;
+
+ TRTDAnalogInputModule = class(TBaseAnalogModule)
+   public
+     property Low_ChannelDataValue;
+     property High_ChannelDataValue;
+     property ChannelOpenCircuitFlag;
  end;  // TRTDAnalogInputModule
 
- TAnalogOutputModule = class(TObject)
-             ModuleNumber : Integer;
-             ModuleType : Integer; // 0 Input 1 Output
-             ModuleError : Boolean;
-             ModuleWords : TModuleWords;
-             ChannelDataValue : array[0..3] of Double;
-             ChannelStatus : array[0..3] of boolean;
-             ChannelOverRangeFlag : array[0..3] of boolean;
-             ChannelUnderRangeFlag : array[0..3] of boolean;
-             public
-               Constructor Create;
- end; // TAnalogOutputModule
-
  TAnalogInputModule1762_IF4 = record // 1762-IF4 I/O Expansion Module
-                                ModuleType : String[255];
-                                ChannelDataInputValue : array[0..3] of double;
-                                ChannelSign : array[0..3] of integer;
-                                ChannelStatus : array[0..3] of boolean;
-                                ChannelOverRangeFlag : array[0..3] of boolean;
-                                ChannelUnderRangeFlag : array[0..3] of boolean;
+   ModuleType : String[255];
+   ChannelDataInputValue : array[0..3] of double;
+   ChannelSign : array[0..3] of integer;
+   ChannelStatus : array[0..3] of boolean;
+   ChannelOverRangeFlag : array[0..3] of boolean;
+   ChannelUnderRangeFlag : array[0..3] of boolean;
  end; // TAnalogInputModule1762_IF4
 
  TAnalogOutputModule1762_OF4 = record // 1762-OF4 Expansion Module
-                                 ModuleType : String[255];
-                                 ChannelDataOutputValue : array[0..3] of double;
-                                 ChannelDataFormat : array[0..3,0..3] of boolean; // Raw Proportional or Scaled for PID
-                                 ChannelTypeRange : array[0..3,0..4] of boolean; // Either Voltage (0-10V) or Current(4 to 20mA)
-                                 ChannelStatus : array[0..3] of boolean;
-                                 ChannelOverRangeFlag : array[0..3] of boolean;
-                                 ChannelUnderRangeFlag : array[0..3] of boolean;
+   ModuleType : String[255];
+   ChannelDataOutputValue : array[0..3] of double;
+   ChannelDataFormat : array[0..3,0..3] of boolean; // Raw Proportional or Scaled for PID
+   ChannelTypeRange : array[0..3,0..4] of boolean; // Either Voltage (0-10V) or Current(4 to 20mA)
+   ChannelStatus : array[0..3] of boolean;
+   ChannelOverRangeFlag : array[0..3] of boolean;
+   ChannelUnderRangeFlag : array[0..3] of boolean;
  end; // TAnalogOutputModule1762_OF4
 
- TModuleArray = array[0..7] of TObject;
+ TModuleArray = array[0..7] of IInterface;
  TModuleType = array[0..7] of Integer;
 
  TConfigurationError = procedure(Sender : TObject; ErrorNumber : Integer; PLCErrorMessage : ShortString) of Object;
@@ -291,7 +608,7 @@ Type
    procedure DoSendWatchDogToggle;
    procedure Execute; Override;
  public
-   constructor Create(Var ParentThread : TPLCWriteThread);
+   constructor Create(aParentThread : TPLCWriteThread);
    destructor Destroy; Override;
    property WatchDogEnabled : Boolean read FWatchDogEnabled write FWatchDogEnabled;
    property WatchDogBitNum : Integer read FWatchDogBit write FWatchDogBit;
@@ -304,7 +621,8 @@ Type
    PLCMonitor : TPLCMonitor;
    FPLCWrite : TABCTL;
    FWriteFault : Boolean;
-   FWriteStack : TStringList;
+   FWriteStack : IQueue<IPLCPacket>;
+//   FWriteStack : TStringList;  //!!
    FLastPacketWritten : TPLCWritePacketRecord;
    FLastPacketWithError : TPLCWritePacketRecord;
    FWriteErrorNum : Integer;
@@ -329,11 +647,11 @@ Type
    procedure DoTransmitPacket;
    procedure DoWriteErrorEvent;
    procedure DoWriteRecoverableErrorEvent;
-   function ValidatePacket(lPacket : TPLCWritePacket) : boolean;
-   function AddToWriteStack(lPacket : TPLCWritePacket) : Boolean;
+   function ValidatePacket(lPacket : IPLCPacket) : boolean;
+   function AddToWriteStack(lPacket : IPLCPacket) : Boolean;
    procedure Execute; Override;
  public
-   constructor Create(var lParent : TPLCMonitor);
+   constructor Create(aParent : TPLCMonitor; aPLC: TABCTL);
    destructor Destroy; Override;
    function WriteBitToPLC(pFile : ShortString; pWordNumber : integer; BitNumber : integer; intSize : integer; Value : boolean) : Boolean;
    function WriteWordToPLC(pFile : ShortString; pWordNumber : integer; intSize : integer; Value : SmallInt) : Boolean;
@@ -380,7 +698,8 @@ Type
    FModuleCount : Integer;
    FModuleType : TModuleType;
    FModules : TModuleArray;
-   FReadStack : TStringList;
+//   FReadStack : TStringList; //!!
+   FReadStack : IQueue<IPLCPacket>;
    FProcessReadPacket : Boolean;
    FReadPacketRec : TPLCReadPacketRec;
    FReadFaultTol : LongInt;
@@ -411,10 +730,10 @@ Type
    procedure DoReadRecoverableErrorEvent;
    procedure PrimePLCForNextRead(Value : Integer);
    procedure PopulateModules;
-   procedure AddToReadStack(lPacket : TPLCReadPacket);
+   procedure AddToReadStack(lPacket : IPLCPacket);
    procedure Execute; Override;
  public
-   constructor Create(Var lParent : TPLCMonitor);
+   constructor Create(aParent : TPLCMonitor; aPLC: TABCTL);
    destructor Destroy; Override;
    procedure ReadBitFromPLC(pFile : ShortString; pWordNumber : integer; BitNumber : integer; intSize : integer);
    procedure ReadWordFromPLC(pFile : ShortString; pWordNumber : integer; intSize : integer);
@@ -508,7 +827,7 @@ Type
    function GetErrorMessage(nErrorCode : TintErrorCode) : ShortString;
    function GetLastReadError : ShortString;
    function GetLastWriteError : ShortString;
-   function ValidIPAddress(Value : ShortString) : Boolean;
+   function ValidIPv4Address(Value : ShortString) : Boolean;
    procedure SetVersion(Value : ShortString);
    procedure SetWatchDogWordNumber(Value : Integer);
    procedure SetWatchDogBitNumber(Value : Integer);
@@ -588,7 +907,7 @@ procedure Register;
 implementation
 {_R PLCMonitor.dcr}
 
-uses Math;
+uses RegularExpressions, Math;
 
 var
   UsingWriteStack : LongInt;
@@ -598,6 +917,626 @@ procedure Register;
 begin
   RegisterComponents('TMSI', [TPLCMonitor]);
 end;
+
+
+{$region 'TBasePLCPacket'}
+procedure TBasePLCPacket.SetSize(aValue: LongInt);
+begin
+  FSize := aValue;
+end;
+
+function TBasePLCPacket.GetSize: LongInt;
+begin
+  result := FSize;
+end;
+
+procedure TBasePLCPacket.SetFileType(aValue: ShortString);
+begin
+  FFileType := aValue;
+end;
+
+function TBasePLCPacket.GetFileType: ShortString;
+begin
+  result := FFileType;
+end;
+
+procedure TBasePLCPacket.SetWordNumber(aValue: Longint);
+begin
+  FWordNumber := aValue;
+end;
+
+function TBasePLCPacket.GetWordNumber: LongInt;
+begin
+  result := FWordNumber;
+end;
+
+procedure TBasePLCPacket.SetBitPosition(aValue: Longint);
+begin
+  FBitPosition := aValue;
+end;
+
+function TBasePLCPacket.GetBitPosition: longInt;
+begin
+  result := FBitPosition;
+end;
+
+procedure TBasePLCPacket.SetReadBit(aValue: Boolean);
+begin
+  FReadBit := aValue;
+end;
+
+function TBasePLCPacket.GetReadBit: Boolean;
+begin
+  result := FReadBit;
+end;
+
+procedure TBasePLCPacket.SetReadWord(aValue: Boolean);
+begin
+  FReadWord := aValue;
+end;
+
+function TBasePLCPacket.GetReadWord: Boolean;
+begin
+  result := FReadWord;
+end;
+
+procedure TBasePLCPacket.SetBitRead(aValue: Boolean);
+begin
+  FBitRead := aValue;
+end;
+
+function TBasePLCPacket.GetBitRead: Boolean;
+begin
+  result := FBitRead;
+end;
+
+procedure TBasePLCPacket.SetWordRead(aValue: Smallint);
+begin
+  FWordRead := aValue;
+end;
+
+function TBasePLCPacket.GetWordRead: Smallint;
+begin
+  result := FWordRead;
+end;
+
+procedure TBasePLCPacket.SetTransactionPhase(aValue: Longint);
+begin
+  FTransactionPhase := aValue;
+end;
+
+function TBasePLCPacket.GetTransactionPhase: Longint;
+begin
+  result := FTransactionPhase;
+end;
+
+procedure TBasePLCPacket.SetWriteBit(aValue: Boolean);
+begin
+  FWriteBit := aValue;
+end;
+
+function TBasePLCPacket.GetWriteBit: Boolean;
+begin
+  result := FWriteBit;
+end;
+
+procedure TBasePLCPacket.SetWriteWord(aValue: Boolean);
+begin
+  FWriteWord := aValue;
+end;
+
+function TBasePLCPacket.GetWriteWord: Boolean;
+begin
+  result := FWriteWord;
+end;
+
+procedure TBasePLCPacket.SetBitToWrite(aValue: Boolean);
+begin
+  FBitToWrite := aValue;
+end;
+
+function TBasePLCPacket.GetBitToWrite: Boolean;
+begin
+  result := FBitToWrite;
+end;
+
+procedure TBasePLCPacket.SetWordToWrite(aValue: Smallint);
+begin
+  FWordToWrite := aValue;
+end;
+
+function TBasePLCPacket.GetWordToWrite: Smallint;
+begin
+  result := FWordToWrite;
+end;
+
+procedure TBasePLCPacket.SetTransmitAttempts(aValue: Longint);
+begin
+  FTransmitAttempts := aValue;
+end;
+
+function TBasePLCPacket.GetTransmitAttempts: Longint;
+begin
+  result := FTransmitAttempts;
+end;
+
+Constructor TBasePLCPacket.Create;
+begin
+  inherited Create;
+  FSize := 0;
+  FFileType := '';
+  FWordNumber := 0;
+  FBitPosition := 0;
+  FWriteBit := False;
+  FWriteWord := False;
+  FBitToWrite := False;
+  FWordToWrite := 0;
+  FTransactionPhase := -1;
+  FTransmitAttempts := 0;
+  FReadBit := False;
+  FReadWord := False;
+  FWordRead := 0;
+  FBitRead := False;
+end; // TPLCReadPacket.Create
+{$endregion}
+
+{$region 'TPLCMainModule'}
+function TPLCMainModule.GetModuleNumber: integer;
+begin
+  result := FModuleNumber;
+end;
+
+procedure TPLCMainModule.SetModuleNumber(aValue: integer);
+begin
+  FModuleNumber := aValue;
+end;
+
+function TPLCMainModule.GetModuleType: integer;
+begin
+  result := FModuleType;
+end;
+
+procedure TPLCMainModule.SetModuleType(aValue: integer); // 0 Main 1 Input 2 Output
+begin
+  FModuleType := aValue;
+end;
+
+function TPLCMainModule.GetModuleError: Boolean;
+begin
+  result := FModuleError;
+end;
+
+procedure TPLCMainModule.SetModuleError(aValue: Boolean);
+begin
+  FModuleError := aValue;
+end;
+
+function TPLCMainModule.GetMajorErrorCode: integer;
+begin
+  result := FMajorErrorCode;
+end;
+
+procedure TPLCMainModule.SetMajorErrorCode(aValue: integer);
+begin
+  FMajorErrorCode := aValue;
+end;
+
+function TPLCMainModule.GetProcessorMode: integer;
+begin
+  result := FProcessorMode;
+end;
+
+procedure TPLCMainModule.SetProcessorMode(aValue: integer);
+begin
+  FProcessorMode := aValue;
+end;
+
+function TPLCMainModule.GetForcedIO: Boolean;
+begin
+  result := FForcedIO;
+end;
+
+procedure TPLCMainModule.SetForcedIO(aValue: Boolean);
+begin
+  FForcedIO := aValue;
+end;
+
+function TPLCMainModule.GetControlRegisterError: Boolean;
+begin
+  result := FControlRegisterError;
+end;
+
+procedure TPLCMainModule.SetControlRegisterError(aValue: Boolean);
+begin
+  FControlRegisterError := aValue;
+end;
+
+function TPLCMainModule.GetBatteryOK: Boolean;
+begin
+  result := FBatteryOK;
+end;
+
+procedure TPLCMainModule.SetBatteryOK(aValue: Boolean);
+begin
+  FBatteryOK := aValue;
+end;
+
+function TPLCMainModule.GetDigitalInputModuleWords: TModuleWords;
+begin
+  result := FDigitalInputModuleWords;
+end;
+
+procedure TPLCMainModule.SetDigitalInputModuleWords(aValue: TModuleWords);
+begin
+  FDigitalInputModuleWords := aValue;
+end;
+
+function TPLCMainModule.GetDigitalOutputModuleWords: TModuleWords;
+begin
+  result := FDigitalOutputModuleWords;
+end;
+
+procedure TPLCMainModule.SetDigitalOutputModuleWords(aValue: TModuleWords);
+begin
+  FDigitalOutputModuleWords := aValue;
+end;
+
+function TPLCMainModule.GetAnalogInputModuleWords: TModuleWords;
+begin
+  result := FAnalogInputModuleWords;
+end;
+
+procedure TPLCMainModule.SetAnalogInputModuleWords(aValue: TModuleWords);
+begin
+  FAnalogInputModuleWords := aValue;
+end;
+
+function TPLCMainModule.GetAnalogOutputModuleWords: TModuleWords;
+begin
+  result := FAnalogOutputModuleWords;
+end;
+
+procedure TPLCMainModule.SetAnalogOutputModuleWords(aValue: TModuleWords);
+begin
+  FAnalogOutputModuleWords := aValue;
+end;
+
+function TPLCMainModule.GetRequestBits_ModuleWords: TModuleWords;
+begin
+  result := FRequestBits_ModuleWords;
+end;
+
+procedure TPLCMainModule.SetRequestBits_ModuleWords(aValue: TModuleWords);
+begin
+  FRequestBits_ModuleWords := aValue;
+end;
+
+function TPLCMainModule.GetDigitalInputData(aIndex: integer): TBitArray;
+begin
+  result := FDigitalInputData[aIndex];
+end;
+
+procedure TPLCMainModule.SetDigitalInputData(aIndex: integer; aValue: TBitArray);
+begin
+  FDigitalInputData[aIndex] := aValue;
+end;
+
+function TPLCMainModule.GetLow_DigitalInputData: integer;
+begin
+  result := low(FDigitalInputData);
+end;
+
+function TPLCMainModule.GetHigh_DigitalInputData: integer;
+begin
+  result := high(FDigitalInputData);
+end;
+
+function TPLCMainModule.GetAnalogInputData(aIndex: integer): Double;
+begin
+  result := FAnalogInputData[aIndex];
+end;
+
+procedure TPLCMainModule.SetAnalogInputData(aIndex: integer; aValue: Double);
+begin
+  FAnalogInputData[aIndex] := aValue;
+end;
+
+function TPLCMainModule.GetLow_AnalogInputData: integer;
+begin
+  result := low(FAnalogInputData);
+end;
+
+function TPLCMainModule.GetHigh_AnalogInputData: integer;
+begin
+  result := high(FAnalogInputData);
+end;
+
+function TPLCMainModule.GetDigitalOutputData(aIndex: integer): TBitArray;
+begin
+  result := FDigitalOutputData[aIndex];
+end;
+
+procedure TPLCMainModule.SetDigitalOutputData(aIndex: integer; aValue: TBitArray);
+begin
+  FDigitalOutputData[aIndex] := aValue;
+end;
+
+function TPLCMainModule.GetLow_DigitalOutputData: integer;
+begin
+  result := low(FDigitalOutputData);
+end;
+
+function TPLCMainModule.GetHigh_DigitalOutputData: integer;
+begin
+  result := high(FDigitalOutputData);
+end;
+
+function TPLCMainModule.GetAnalogOutputData(aIndex: integer): Double;
+begin
+  result := FAnalogOutputData[aIndex];
+end;
+
+procedure TPLCMainModule.SetAnalogOutputData(aIndex: integer; aValue: Double);
+begin
+  FAnalogOutputData[aIndex] := aValue;
+end;
+
+function TPLCMainModule.GetLow_AnalogOutputData: integer;
+begin
+  result := low(FAnalogOutputData);
+end;
+
+function TPLCMainModule.GetHigh_AnalogOutputData: integer;
+begin
+  result := high(FAnalogOutputData);
+end;
+
+function TPLCMainModule.GetRequest_Bits_Status(aIndex: integer): TBitArray;
+begin
+  result := FRequest_Bits_Status[aIndex];
+end;
+
+procedure TPLCMainModule.SetRequest_Bits_Status(aIndex: integer; aValue: TBitArray);
+begin
+  FRequest_Bits_Status[aIndex] := aValue;
+end;
+
+function TPLCMainModule.GetRequest_Bits_Status_Size: integer;
+begin
+  result := high(FRequest_Bits_Status);
+end;
+
+Constructor TPLCMainModule.Create;
+begin
+  inherited Create;
+  FModuleNumber := 0;
+  FModuleType := 0;
+  FModuleError := False;
+  FForcedIO := False;
+  FControlRegisterError := False;
+  FBatteryOK := True;
+  FProcessorMode := 0;
+  FillChar(FDigitalInputModuleWords,SizeOf(FDigitalInputModuleWords),#0);
+  FillChar(FDigitalOutputModuleWords,SizeOf(FDigitalOutputModuleWords),#0);
+  FillChar(FAnalogInputModuleWords,SizeOf(FAnalogInputModuleWords),#0);
+  FillChar(FAnalogOutputModuleWords,SizeOf(FAnalogOutputModuleWords),#0);
+  FillChar(FDigitalInputData,SizeOf(FDigitalInputData),#0);
+  FillChar(FAnalogInputData,SizeOf(FAnalogInputData),#0);
+  FillChar(FDigitalOutputData,SizeOf(FDigitalOutputData),#0);
+  FillChar(FAnalogOutputData,SizeOf(FAnalogOutputData),#0);
+end; // TPLCMainModule.Create
+{$endregion}
+
+{$region 'TBaseDigitalIOModule'}
+function TBaseDigitalIOModule.GetModuleNumber: Integer;
+begin
+  result := FModuleNumber;
+end;
+
+procedure TBaseDigitalIOModule.SetModuleNumber(aValue: integer);
+begin
+  FModuleNumber := aValue;
+end;
+
+function TBaseDigitalIOModule.GetModuleType: Integer;
+begin
+  result := FModuleType;
+end;
+
+procedure TBaseDigitalIOModule.SetModuleType(aValue: integer); // 0 Input 1 Output
+begin
+  FModuleType := aValue;
+end;
+
+function TBaseDigitalIOModule.GetModuleError: Boolean;
+begin
+  result := FModuleError;
+end;
+
+procedure TBaseDigitalIOModule.SetModuleError(aValue: Boolean);
+begin
+  FModuleError := aValue;
+end;
+
+function TBaseDigitalIOModule.GetModuleWords: TModuleWords;
+begin
+  result := FModuleWords;
+end;
+
+procedure TBaseDigitalIOModule.SetModuleWords(aValue: TModuleWords);
+begin
+  FModuleWords := aValue;
+end;
+
+function TBaseDigitalIOModule.GetDigitalOutputData: TBitArray;
+begin
+  result := FDigitalOutputData;
+end;
+
+procedure TBaseDigitalIOModule.SetDigitalOutputData(aValue: TBitArray);
+begin
+  FDigitalOutputData := aValue;
+end;
+
+procedure TBaseDigitalIOModule.SetDigitalInputData(aValue: TBitArray);
+begin
+  FDigitalInputData := aValue;
+end;
+
+function TBaseDigitalIOModule.GetDigitalInputData: TBitArray;
+begin
+  result := FDigitalInputdata;
+end;
+
+function TBaseDigitalIOModule.GetRelayedDigitalOutputData: TBitArray;
+begin
+  result := FRelayedDigitalOutputData;
+end;
+
+procedure TBaseDigitalIOModule.SetRelayedDigitalOutputData(aValue: TBitArray);
+begin
+  FRelayedDigitalOutputData := aValue;
+end;
+
+Constructor TBaseDigitalIOModule.Create;
+begin
+  inherited Create;
+  FModuleNumber := 0;
+  FModuleType := 0;
+  FModuleError := False;
+  FillChar(FModuleWords,SizeOf(FModuleWords),#0);
+  FillChar(FDigitalInputData,SizeOf(FDigitalInputData),#0);
+  FillChar(FDigitalOutputData,SizeOf(FDigitalInputData),#0);
+  FillChar(FRelayedDigitalOutputData,SizeOf(FRelayedDigitalOutputData),#0);
+end; // TDigitalInputMoodule.Create
+{$endregion}
+
+{$region 'TBaseAnalogModule'}
+function TBaseAnalogModule.GetModuleNumber: Integer;
+begin
+  result := FModuleNumber;
+end;
+
+procedure TBaseAnalogModule.SetModuleNumber(aValue: integer);
+begin
+  FModuleNumber := aValue;
+end;
+
+function TBaseAnalogModule.GetModuleType: Integer;
+begin
+  result := FModuleType;
+end;
+
+procedure TBaseAnalogModule.SetModuleType(aValue: integer); // 0 Input 1 Output
+begin
+  FModuleType := aValue;
+end;
+
+function TBaseAnalogModule.GetModuleError: Boolean;
+begin
+  result := FModuleError;
+end;
+
+procedure TBaseAnalogModule.SetModuleError(aValue: Boolean);
+begin
+  FModuleError := aValue;
+end;
+
+function TBaseAnalogModule.GetModuleWords: TModuleWords;
+begin
+  result := FModuleWords;
+end;
+
+procedure TBaseAnalogModule.SetModuleWords(aValue: TModuleWords);
+begin
+  FModuleWords := aValue;
+end;
+
+function TBaseAnalogModule.GetChannelDataValue(aIndex: integer): Double;
+begin
+  result := FChannelDataValue[aIndex];
+end;
+
+procedure TBaseAnalogModule.SetChannelDataValue(aIndex: integer; aValue: Double);
+begin
+  FChannelDataValue[aIndex] := aValue;
+end;
+
+function TBaseAnalogModule.GetChannelStatus(aIndex: integer): Boolean;
+begin
+  result := FChannelStatus[aIndex];
+end;
+
+procedure TBaseAnalogModule.SetChannelStatus(aIndex: integer; aValue: Boolean);
+begin
+  FChannelStatus[aIndex] := aValue;
+end;
+
+function TBaseAnalogModule.GetChannelOverRangeFlag(aIndex: integer): Boolean;
+begin
+  result := FChannelOverRangeFlag[aIndex];
+end;
+
+procedure TBaseAnalogModule.SetChannelOverRangeFlag(aIndex: integer; aValue: Boolean);
+begin
+  FChannelOverRangeFlag[aIndex] := aValue;
+end;
+
+function TBaseAnalogModule.GetChannelUnderRangeFlag(aIndex: integer): Boolean;
+begin
+  result := FChannelUnderRangeFlag[aIndex];
+end;
+
+procedure TBaseAnalogModule.SetChannelUnderRangeFlag(aIndex: integer; aValue: Boolean);
+begin
+  FChannelUnderRangeFlag[aIndex] := aValue;
+end;
+
+function TBaseAnalogModule.GetLow_ChannelDataValue: integer;
+begin
+  result := low(FChannelDataValue);
+end;
+
+function TBaseAnalogModule.GetHigh_ChannelDataValue: integer;
+begin
+  result := high(FChannelDataValue);
+end;
+
+procedure TBaseAnalogModule.SetChannelOCFlag(Channel : Byte; Value : Boolean);
+begin
+  if (Channel in [Low(FChannelOpenCircuitFlag)..High(FChannelOpenCircuitFlag)]) then
+    FChannelOpenCircuitFlag[Channel] := Value;
+end; // TBaseAnalogModule.SetChannelURFlag
+
+function TBaseAnalogModule.GetChannelOCFlag(Channel : Byte) : Boolean;
+begin
+  if (Channel in [Low(FChannelOpenCircuitFlag)..High(FChannelOpenCircuitFlag)]) then
+    Result := FChannelOpenCircuitFlag[Channel]
+  else
+    Result := False;
+end; // TBaseAnalogModule.GetChannelURFlag
+
+Constructor TBaseAnalogModule.Create;
+begin
+  inherited Create;
+  FModuleNumber := 0;
+  FModuleType := 0;
+  FModuleError := False;
+  FillChar(FModuleWords,SizeOf(FModuleWords),#0);
+//  FillChar(FChannelDataValue,SizeOf(FChannelDataValue),#0);
+  SetLength(FChannelDataValue, 4);
+//  FillChar(FChannelStatus,SizeOf(FChannelStatus),#0);
+  SetLength(FChannelStatus, 4);
+//  FillChar(FChannelOverRangeFlag,SizeOf(FChannelOverRangeFlag),#0);
+  SetLength(FChannelOverRangeFlag, 4);
+//  FillChar(FChannelUnderRangeFlag,SizeOf(FChannelUnderRangeFlag),#0);
+  SetLength(FChannelUnderRangeFlag, 4);
+//  FillChar(FChannelOpenCircuitFlag,SizeOf(FChannelOpenCircuitFlag), #0);
+  SetLength(FChannelOpenCircuitFlag, 4);
+end; // TBaseAnalogModule.Create
+{$endregion}
+
+{ =============== }
 
 procedure TPLCWatchDogThread.DoSendWatchDogToggle;
 begin
@@ -621,10 +1560,10 @@ begin
   end; // While
 end; // TPLCWatchDogThread.Execute
 
-constructor TPLCWatchDogThread.Create(Var ParentThread : TPLCWriteThread);
+constructor TPLCWatchDogThread.Create(aParentThread : TPLCWriteThread);
 begin
   inherited Create(True);
-  FPLCWriteThread := ParentThread;
+  FPLCWriteThread := aParentThread;
   FWatchDogValue := False;
   FWatchDogBit := 0;
   FWatchDogWordNum := 0;
@@ -718,32 +1657,34 @@ end; // TPLCReadThread.SetReadEnabled
 
 destructor TPLCReadThread.Destroy;
 var
-  ReadPacket : TPLCReadPacket;
+  ReadPacket : IPLCPacket;
 begin
   if Assigned(FPLCRead) then
   begin
     FPLCRead.Enabled := False;
+    FreeAndNil(FPLCRead);
     FPLCRead.Free;
     FPLCRead := Nil;
   end; // If
   if FReadStack.Count > 0 then
   begin
-    repeat
-      ReadPacket := FReadStack.Objects[0] as TPLCReadPacket;
-      ReadPacket.Free;
-      ReadPacket := Nil;
-      FReadStack.Delete(0);
-    until FReadStack.Count = 0;
+//    repeat          //!!
+//      ReadPacket := FReadStack.Objects[0] as TPLCReadPacket; //!!
+      FReadStack.Clear;
+//      ReadPacket.Free;
+//      ReadPacket := Nil;   //!!
+//      FReadStack.Delete(0); //!!
+//    until FReadStack.Count = 0; //!!
   end; // If
-  FReadStack.Free;
+//  FReadStack.Free; //!!
   FReadStack := Nil;
   inherited Destroy;
 end; // TPLCReadThread.Destroy
 
-constructor TPLCReadThread.Create(Var lParent : TPLCMonitor);
+constructor TPLCReadThread.Create(aParent : TPLCMonitor; aPLC: TABCTL);
 begin
   inherited Create(True);
-  PLCMonitor := lParent;
+  PLCMonitor := aParent;
   FSleepTime := 1;
   FModuleCount := 0;
   FillChar(FModuleType,SizeOf(FModuleType),#0);
@@ -773,27 +1714,27 @@ begin
   FReadEnabled := False;
   FReadIPAddress := '0.0.0.0';
   FModulesLoaded := False;
-  FReadStack := TStringList.Create;
-  FReadStack.Clear;
+//  FReadStack := TStringList.Create;               //!!
+//  FReadStack.Clear;                               //!!
+  FReadStack := TCollections.CreateQueue<IPLCPacket>;
   FProcessReadPacket := False;
   FillChar(FReadPacketRec,SizeOf(FReadPacketRec),#0);
   FReadFaultTol := 4;
   FReadFaultCount := 0;
   FPacketQueLength := 0;
-  {$ifndef NoPLC}
-  FPLCRead := TABCTL.Create(Nil);
-  with FPLCRead do
-  begin
-    Adapter      := 0;
-    Enabled      := False;
-    Function_    := 0;
-    FileAddr     := 'B3';
-    Size         := 1;
-    Timeout      := 1000{ms};
-    OnErrorEvent := PLCReadErrorEvent;
-    OnReadDone   := PLCReadReadDone
-  end; // With
-  {$endif}
+  FPLCRead := aPLC;
+  if assigned(FPLCRead) then
+    with FPLCRead do
+    begin
+      Adapter      := 0;
+      Enabled      := False;
+      Function_    := 0;
+      FileAddr     := 'B3';
+      Size         := 1;
+      Timeout      := 1000{ms};
+      OnErrorEvent := PLCReadErrorEvent;
+      OnReadDone   := PLCReadReadDone
+    end; // With
 end; // TPLCReadThread.Create
 
 function TPLCReadThread.GetSleepTime : LongInt;
@@ -810,7 +1751,7 @@ end; // TPLCReadThread.SetSleepTime
 
 procedure TPLCReadThread.DoReadPacket;
 var
-  ReadPacket : TPLCReadPacket;
+  ReadPacket : IPLCPacket;
 begin
   if Assigned(FReadStack) then
   begin
@@ -819,7 +1760,8 @@ begin
     begin
       if Terminated then
         Exit;
-      ReadPacket := FReadStack.Objects[0] as TPLCReadPacket;
+//      ReadPacket := FReadStack.Objects[0] as TPLCReadPacket; //!!
+      ReadPacket := FReadStack.Peek;
       if Assigned(ReadPacket) then
       begin
         FProcessReadPacket := True;
@@ -834,14 +1776,15 @@ begin
           ReadWord := ReadPacket.ReadWord;
           TransactionPhase := ReadPacket.TransactionPhase;
         end; // With
-        with FPLCRead do
-        begin
-          Size := ReadPacket.Size;
-          FileAddr := format('%s:%d',[ReadPacket.FileType,ReadPacket.WordNumber]);
-          if Not Terminated and Not FReadFault then
-            Trigger;
-        end; // With
-        ReadPacket := Nil;
+        if assigned(FPLCRead) then
+          with FPLCRead do
+          begin
+            Size := ReadPacket.Size;
+            FileAddr := format('%s:%d',[ReadPacket.FileType,ReadPacket.WordNumber]);
+            if Not Terminated and Not FReadFault then
+              Trigger;
+          end; // With
+//        ReadPacket := Nil;  //!!
       end; // If
     end; // If
   end; // If
@@ -927,17 +1870,17 @@ end; // TPLCMonitor.GetReadIPAddress
 
 procedure TPLCMonitor.SetReadIPAddress(Value : ShortString);
 begin
-  if ValidIPAddress(Value) then
+  if ValidIPv4Address(Value) then
   begin
     FReadIPAddress := Value;
+    if Assigned(FPLCReadThread) then
+        FPLCReadThread.ReadIPAddress := Value
   end
   else
   begin
     if Assigned(FOnConfigurationError) then
       FOnConfigurationError(Self,3,'Attempted to apply invalid read IP address.');
   end; // If
-  if Assigned(FPLCReadThread) then
-      FPLCReadThread.ReadIPAddress := Value
 end; // TPLCMonitor.SetReadIPAddress
 
 Constructor TPLCMonitor.Create(AOwner : TComponent);
@@ -975,8 +1918,8 @@ begin
   {$ifndef NoPLC}
   if not (csDesigning in ComponentState) then
   begin
-    FPLCReadThread := TPLCReadThread.Create(Self);
-    FPLCWriteThread := TPLCWriteThread.Create(Self);
+    FPLCReadThread := TPLCReadThread.Create(Self, TABCTL.Create(nil));
+    FPLCWriteThread := TPLCWriteThread.Create(Self, TABCTL.Create(nil));
     FPLCWatchDogThread := TPLCWatchDogThread.Create(FPLCWriteThread);
   end; // If
   {$endif}
@@ -984,7 +1927,7 @@ end; // TPLCMonitor.Create
 
 Destructor TPLCMonitor.Destroy;
 begin
-  {$IFNDEF NOPLC}
+//  {$IFNDEF NOPLC}
   if not (csDesigning in ComponentState) then
   begin
     SavePLCConfiguration(FConfigurationFile);
@@ -1004,7 +1947,7 @@ begin
     FPLCReadThread := Nil;
     FPLCWriteThread := Nil;
   end; // If
-  {$ENDIF}
+//  {$ENDIF}
   inherited Destroy;
 end; // TPLCMonitor.Destroy
 
@@ -1028,7 +1971,7 @@ end; // TPLCWriteThread.SetEnabled
 
 destructor TPLCWriteThread.Destroy;
 var
-  TransmitPacket : TPLCWritePacket;
+  TransmitPacket : IPLCPacket;
 begin
   if Assigned(FPLCWrite) then
   begin
@@ -1038,27 +1981,29 @@ begin
   end; // If
   if FWriteStack.Count > 0 then
   begin
-    repeat
-      TransmitPacket := FWriteStack.Objects[0] as TPLCWritePacket;
-      TransmitPacket.Free;
-      TransmitPacket := Nil;
-      FWriteStack.Delete(0);
-    until FWriteStack.Count = 0;
+//    repeat  //!!
+//      TransmitPacket := FWriteStack.Objects[0] as TPLCWritePacket;  //!!
+      FWriteStack.Clear;
+//      TransmitPacket.Free;
+//      TransmitPacket := Nil; //!!
+//      FWriteStack.Delete(0);  //!!
+//    until FWriteStack.Count = 0;  //!!
   end; // If
-  FWriteStack.Free;
+//  FWriteStack.Free;                  //!!
   FWriteStack := Nil;
   inherited Destroy;
 end; // TPLCWriteThread.Destroy
 
-constructor TPLCWriteThread.Create(Var lParent : TPLCMonitor);
+constructor TPLCWriteThread.Create(aParent : TPLCMonitor; aPLC: TABCTL);
 begin
   inherited Create(True);
-  PLCMonitor := lParent;
+  PLCMonitor := aParent;
   FWriteEnabled := False;
   FillChar(FLastPacketWritten,SizeOf(FLastPacketWritten),#0);
   Fillchar(FLastPacketWithError,SizeOf(FLastPacketWithError),#0);
-  FWriteStack := TStringList.Create;
-  FWriteStack.Clear;
+//  FWriteStack := TStringList.Create; //!!
+//  FWriteStack.Clear;                 //!!
+  FWriteStack := TCollections.CreateQueue<IPLCPacket>;
   FWriteErrorNum := 0;
   FWriteErrorStr := '';
   FWriteIPAddress := '0.0.0.0';
@@ -1066,20 +2011,21 @@ begin
   FWriteFaultCount := 0;
   FPacketQueLength := 0;
   FWriteAttemptsBeforeFail := 0;
-  {$ifndef NoPLC}
-  FPLCWrite := TABCTL.Create(Nil);
-  with FPLCWrite do
-  begin
-    Adapter          := 0;
-    Enabled          := False;
-    Function_        := 1;
-    FileAddr         := 'N7:0';
-    Size             := 1;
-    TimeOut          := 1000{ms};
-    OnErrorEvent     := PLCWriteErrorEvent;
-    OnWriteDone      := PLCWriteWriteDone;
-  end; // With
-  {$endif}
+//  {$ifndef NoPLC}
+  FPLCWrite := aPLC;
+  if assigned(FPLCWrite) then
+    with FPLCWrite do
+    begin
+      Adapter          := 0;
+      Enabled          := False;
+      Function_        := 1;
+      FileAddr         := 'N7:0';
+      Size             := 1;
+      TimeOut          := 1000{ms};
+      OnErrorEvent     := PLCWriteErrorEvent;
+      OnWriteDone      := PLCWriteWriteDone;
+    end; // With
+//  {$endif}
 end; // TPLCWriteThread.Create
 
 procedure TPLCWriteThread.DoWriteErrorEvent;
@@ -1090,7 +2036,7 @@ end; // TPLCWriteThread.DoWriteErrorEvent
 
 procedure TPLCWriteThread.DoTransmitPacket;
 var
-  TransmitPacket : TPLCWritePacket;
+  TransmitPacket : IPLCPacket;
   lAddress : ShortString;
 begin
   if Not Terminated then
@@ -1104,7 +2050,8 @@ begin
           if Not FPLCWrite.Busy then
           begin
             FillChar(FLastPacketWritten,SizeOf(FLastPacketWritten),#0);
-            TransmitPacket := FWriteStack.Objects[0] as TPLCWritePacket;
+//            TransmitPacket := FWriteStack.Objects[0] as TPLCWritePacket; //!!
+            TransmitPacket := FWriteStack.Dequeue;
             if ValidatePacket(TransmitPacket) then
             begin
               if (TransmitPacket.TransactionPhase = 1) then
@@ -1136,18 +2083,22 @@ begin
             end; // If
             if Assigned(TransmitPacket) then
             begin
+{ TODO :
+This if/then/else can probably be re-written to eliminate need for else since
+true path does nothing. }
               if (TransmitPacket.TransactionPhase <> 3) or (TransmitPacket.TransmitAttempts = FWriteAttemptsBeforeFail) then
               begin
-                TransmitPacket.Free;
+//                TransmitPacket.Free;
               end
               else
               begin // Put Packet back at the top to try again later...
                 TransmitPacket.TransmitAttempts := TransmitPacket.TransmitAttempts + 1;
-                FWriteStack.AddObject(IntToStr(FWriteStack.Count),TransmitPacket); // Add to top of write stack.
+//                FWriteStack.AddObject(IntToStr(FWriteStack.Count),TransmitPacket as TPLCWritePacket); // Add to top of write stack. //!!
+                FWriteStack.Enqueue(TransmitPacket);
               end; // If
             end; // If
-            TransmitPacket := Nil;
-            FWriteStack.Delete(0);
+//            TransmitPacket := Nil;  //!!
+//            FWriteStack.Delete(0);         //!!
           end; // If
         until Terminated or (FWriteStack.Count = 0);
       end; // If
@@ -1155,7 +2106,7 @@ begin
   end; // if
 end; // TPLCWriteThread.DoTransmitPacket
 
-function TPLCWriteThread.ValidatePacket(lPacket : TPLCWritePacket) : boolean;
+function TPLCWriteThread.ValidatePacket(lPacket : IPLCPacket) : boolean;
 begin
   if Assigned(lPacket) then
   begin
@@ -1184,138 +2135,6 @@ begin
   until Terminated;
 end; // TPLCWriteThread.Execute
 
-Constructor TPLCReadPacket.Create;
-begin
-  inherited Create;
-  Size := 0;
-  FileType := '';
-  WordNumber := 0;
-  BitPosition := 0;
-  ReadBit := False;
-  REadWord := False;
-  BitRead := False;
-  WordRead := 0;
-  TransactionPhase := -1;
-end; // TPLCReadPacket.Create
-
-Constructor TPLCWritePacket.Create;
-begin
-  inherited Create;
-  FSize := 0;
-  FFileType := '';
-  FWordNumber := 0;
-  FBitPosition := 0;
-  FWriteBit := False;
-  FWriteWord := False;
-  FBitToWrite := False;
-  FWordToWrite := 0;
-  FTransactionPhase := -1;
-  FTransmitAttempts := 0;
-end; // TPLCWritePacket
-
-Constructor TPLCMainModule.Create;
-begin
-  inherited Create;
-  ModuleNumber := 0;
-  ModuleType := 0;
-  ModuleError := False;
-  ForcedIO := False;
-  ControlRegisterError := False;
-  BatteryOK := True;
-  ProcessorMode := 0;
-  FillChar(DigitalInputModuleWords,SizeOf(DigitalInputModuleWords),#0);
-  FillChar(DigitalOutputModuleWords,SizeOf(DigitalOutputModuleWords),#0);
-  FillChar(AnalogInputModuleWords,SizeOf(AnalogInputModuleWords),#0);
-  FillChar(AnalogOutputModuleWords,SizeOf(AnalogOutputModuleWords),#0);
-  FillChar(DigitalInputData,SizeOf(DigitalInputData),#0);
-  FillChar(AnalogInputData,SizeOf(AnalogInputData),#0);
-  FillChar(DigitalOutputData,SizeOf(DigitalOutputData),#0);
-  FillChar(AnalogOutputData,SizeOf(AnalogOutputData),#0);
-end; // TPLCMainModule.Create
-
-Constructor TDigitalInputModule.Create;
-begin
-  inherited Create;
-  ModuleNumber := 0;
-  ModuleType := 0;
-  ModuleError := False;
-  FillChar(ModuleWords,SizeOf(ModuleWords),#0);
-  FillChar(DigitalInputData,SizeOf(DigitalInputData),#0);
-end; // TDigitalInputMoodule.Create
-
-Constructor TDigitalOutputModule.Create;
-begin
-  inherited Create;
-  ModuleNumber := 0;
-  ModuleType := 0;
-  ModuleError := False;
-  FillChar(ModuleWords,SizeOf(ModuleWords),#0);
-  FillChar(DigitalOutputData,SizeOf(DigitalOutputData),#0);
-end; // TDigitalOutputModule.Create
-
-Constructor TRelayedDigitalOutputModule.Create;
-begin
-  inherited Create;
-  ModuleNumber := 0;
-  ModuleType := 0;
-  ModuleError := False;
-  FillChar(ModuleWords,SizeOf(ModuleWords),#0);
-  FillChar(RelayedDigitalOutputData,SizeOf(RelayedDigitalOutputData),#0);
-end; // TRelayedDigitalOutputModule.Create
-
-Constructor TAnalogInputModule.Create;
-begin
-  inherited Create;
-  ModuleNumber := 0;
-  ModuleType := 0;
-  ModuleError := False;
-  FillChar(ModuleWords,SizeOf(ModuleWords),#0);
-  FillChar(ChannelDataValue,SizeOf(ChannelDataValue),#0);
-  FillChar(ChannelStatus,SizeOf(ChannelStatus),#0);
-  FillChar(ChannelOverRangeFlag,SizeOf(ChannelOverRangeFlag),#0);
-  FillChar(ChannelUnderRangeFlag,SizeOf(ChannelUnderRangeFlag),#0);
-end; // TAnalogInputModule.Create
-
-Constructor TRTDAnalogInputModule.Create;
-begin
-  inherited Create;
-  ModuleNumber := 0;
-  ModuleType := 0;
-  ModuleError := False;
-  FillChar(ModuleWords,SizeOf(ModuleWords),#0);
-  FillChar(ChannelDataValue,SizeOf(ChannelDataValue),#0);
-  FillChar(ChannelStatus,SizeOf(ChannelStatus),#0);
-  FillChar(ChannelOverRangeFlag,SizeOf(ChannelOverRangeFlag),#0);
-  FillChar(ChannelUnderRangeFlag,SizeOf(ChannelUnderRangeFlag),#0);
-  FillChar(FChannelOpenCircuitFlag,SizeOf(FChannelOpenCircuitFlag),#0);
-end; // TRTDAnalogInputModule.Create
-
-Constructor TAnalogOutputModule.Create;
-begin
-  inherited Create;
-  ModuleNumber := 0;
-  ModuleType := 0;
-  ModuleError := False;
-  FillChar(ModuleWords,SizeOf(ModuleWords),#0);
-  FillChar(ChannelDataValue,SizeOf(ChannelDataValue),#0);
-  FillChar(ChannelStatus,SizeOf(ChannelStatus),#0);
-  FillChar(ChannelOverRangeFlag,SizeOf(ChannelOverRangeFlag),#0);
-  FillChar(ChannelUnderRangeFlag,SizeOf(ChannelUnderRangeFlag),#0);
-end; // TAnalogOutputModule.Create
-
-procedure TRTDAnalogInputModule.SetChannelOCFlag(Channel : Byte; Value : Boolean);
-begin
-  if (Channel in [Low(FChannelOpenCircuitFlag)..High(FChannelOpenCircuitFlag)]) then
-    FChannelOpenCircuitFlag[Channel] := Value;
-end; // TRTDAnalogInputModule.SetChannelURFlag
-
-function TRTDAnalogInputModule.GetChannelOCFlag(Channel : Byte) : Boolean;
-begin
-  if (Channel in [Low(FChannelOpenCircuitFlag)..High(FChannelOpenCircuitFlag)]) then
-    Result := FChannelOpenCircuitFlag[Channel]
-  else
-    Result := False;
-end; // TRTDAnalogInputModule.GetChannelURFlag
 
 function TPLCMonitor.GetEnabled : boolean;
 begin
@@ -1327,17 +2146,17 @@ end; // TPLCMonitor.GetEnabled
 
 procedure TPLCMonitor.SetWriteIPAddress(Value : ShortString);
 begin
-  if ValidIPAddress(Value) then
+  if ValidIPv4Address(Value) then
   begin
     FWriteIPAddress := Value;
+    if Assigned(FPLCWriteThread) then
+        FPLCWriteThread.WriteIPAddress := Value
   end
   else
   begin
     if Assigned(FOnConfigurationError) then
       FOnConfigurationError(Self,4,'Attempted to apply invalid write IP address.');
   end; // If
-  if Assigned(FPLCWriteThread) then
-      FPLCWriteThread.WriteIPAddress := Value
 end; // TPLCMonitor.SetWriteIPAddress
 
 function TPLCMonitor.GetWriteIPAddress : ShortString;
@@ -1453,71 +2272,23 @@ begin
   end; // If
 end; // TPLCMonitor.SetEnabled
 
-function TPLCMonitor.ValidIPAddress(Value : ShortString) : Boolean;
-var
-  i : integer;
-  IP1 : ShortString;
-  IP2 : ShortString;
-  IP3 : ShortString;
-  IP4 : ShortString;
-  TMP : ShortString;
-  DotCount : integer;
-  DotPos : array[0..2] of integer;
-  ErrorCount : integer;
+function TPLCMonitor.ValidIPv4Address(Value : ShortString) : Boolean;
 begin
-  Result := False;
-  DotCount := 0;
-  ErrorCount := 0;
-  for i := 1 to Length(Value) do
-  begin
-    if Value[i] = '.' then
-    begin
-      DotPos[DotCount] := i;
-      inc(DotCount);
-    end; // If
-  end; // for i
-  if DotCount = 3 then
-  begin
-    for i := 0 to 3 do
-    begin
-      if i = 0 then
-        TMP := copy(Value,0,Pos('.',Value) - 1)
-      else
-        if i < 3 then
-          TMP := copy(Value,DotPos[i - 1] + 1,(DotPos[i] - DotPos[i - 1]) - 1)
-        else
-          TMP := copy(Value,DotPos[i -1] + 1, Length(Value) - DotPos[i - 1]);
-      if StrToInt(TMP) < 257 then
-      begin
-        case i of
-          0 : IP1 := TMP;
-          1 : IP2 := TMP;
-          2 : IP3 := TMP;
-          3 : IP4 := TMP;
-        end; // Case
-      end
-      else
-      begin
-        inc(ErrorCount);
-      end; // If
-    end; // for i
-    if ErrorCount > 0 then
-      Result := False
-    else
-      Result := True;
-  end; // If
-end; // TPLCMonitor.SetPLCIPAddress
+  result :=  TRegEx.IsMatch(Value,
+      '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$');
+end; // TPLCMonitor.ValidIPv4Address
 
 procedure TPLCReadThread.PLCReadReadDone(Sender : TObject);
 var
   i, j : integer;
   lBoolean : boolean;
-  ReadPacket : TPLCReadPacket;
+  ReadPacket : IPLCPacket;
 begin
   FReadFaultCount := 0;
   if FProcessReadPacket then
   begin
-    ReadPacket := FReadStack.Objects[0] as TPLCReadPacket;
+//    ReadPacket := FReadStack.Objects[0] as TPLCReadPacket; //!!
+    ReadPacket := FReadStack.DeQueue;
     if Assigned(ReadPacket) then
     begin
       ReadPacket.TransactionPhase := 2;
@@ -1529,13 +2300,21 @@ begin
         BitPosition := ReadPacket.BitPosition;
         ReadBit     := ReadPacket.ReadBit;
         ReadWord    := ReadPacket.ReadWord;
-        BitRead     := FPLCRead.BitVal[0{ReadPacket.WordNumber},ReadPacket.BitPosition];
-        WordRead    := FPLCRead.WordVal[0{ReadPacket.WordNumber}];
+        if assigned(FPLCRead) then
+        begin
+          BitRead     := FPLCRead.BitVal[0{ReadPacket.WordNumber},ReadPacket.BitPosition];
+          WordRead    := FPLCRead.WordVal[0{ReadPacket.WordNumber}];
+        end
+        else
+        begin
+          BitRead := false;
+          WordRead := 0;
+        end;
         TransactionPhase := ReadPacket.TransactionPhase;
       end; // With
-      ReadPacket.Free;
-      ReadPacket := Nil;
-      FReadStack.Delete(0);
+//      ReadPacket.Free;
+//      ReadPacket := Nil;       //!!
+//      FReadStack.Delete(0);    //!!
       FProcessReadPacket := False;
       Synchronize(DoReturnValueFromPLC);
       PrimePLCForNextRead(FReadState);
@@ -1549,10 +2328,15 @@ begin
             FillChar(FBinaryBits,SizeOf(FBinaryBits),#0);
             for i := 0 to (FBinaryReadSize - 1) do
             begin
-              FBinaryWords[i] := FPLCRead.WordVal[i];
+              if assigned(FPLCRead) then
+                FBinaryWords[i] := FPLCRead.WordVal[i]
+              else
+                FBinaryWords[i] := 0;
               for j := 0 to 15 do
               begin
-                lBoolean := Ord(FPLCRead.BitVal[i,j]) <> 0;
+                lBoolean := false;
+                if assigned(FPLCRead) then
+                  lBoolean := Ord(FPLCRead.BitVal[i,j]) <> 0;
                 FBinaryBits[i,j] := lBoolean;
               end; // for j
             end; // for i
@@ -1562,10 +2346,14 @@ begin
             Fillchar(FInputBits,SizeOf(FInputBits),#0);
             for i := 0 to (FInputReadSize - 1) do
             begin
-              FInputWords[i] := FPLCRead.WordVal[i];
+              FInputWords[i] := 0;
+              if assigned(FPLCRead) then
+                FInputWords[i] := FPLCRead.WordVal[i];
               for j := 0 to 15 do
               begin
-                lBoolean := Ord(FPLCRead.BitVal[i,j]) <> 0;
+                lBoolean := false;
+                if assigned(FPLCRead) then
+                  lBoolean := Ord(FPLCRead.BitVal[i,j]) <> 0;
                 FInputBits[i,j] := lBoolean;
               end; // for j
             end; // for i
@@ -1575,10 +2363,14 @@ begin
             FillChar(FOutputBits,SizeOf(FOutputbits),#0);
             for i := 0 to (FOutputReadSize - 1) do
             begin
-              FOutputWords[i] := FPLCRead.WordVal[i];
+              FOutputWords[i] := 0;
+              if assigned(FPLCRead) then
+                FOutputWords[i] := FPLCRead.WordVal[i];
               for j := 0 to 15 do
               begin
-                lBoolean := Ord(FPLCRead.BitVal[i,j]) <> 0;
+                lBoolean := false;
+                if assigned(FPLCRead) then
+                  lBoolean := Ord(FPLCRead.BitVal[i,j]) <> 0;
                 FOutputBits[i,j] := lBoolean;
               end; // for j
             end; // for i
@@ -1588,10 +2380,14 @@ begin
             FillChar(FStatusBits,SizeOf(FStatusBits),#0);
             for i := 0 to (FStatusReadSize - 1) do
             begin
-              FStatusWords[i] := FPLCRead.WordVal[i];
+              FStatusWords[i] := 0;
+              if assigned(FPLCRead) then
+                FStatusWords[i] := FPLCRead.WordVal[i];
               for j := 0 to 15 do
               begin
-                lBoolean := Ord(FPLCRead.BitVal[i,j]) <> 0;
+                lBoolean := false;
+                if assigned(FPLCRead) then
+                  lBoolean := Ord(FPLCRead.BitVal[i,j]) <> 0;
                 FStatusBits[i,j] := lBoolean;
               end; // for j
             end; // for i
@@ -1609,7 +2405,7 @@ end;// TPLCMonitor.PLCReadReadDone
 procedure TPLCReadThread.PLCReadErrorEvent(Sender :TObject; nErrorCode : TintErrorCode);
 var
   Msg : ShortString;
-  ReadPacket : TPLCReadPacket;
+  ReadPacket : IPLCPacket;
 begin
   case nErrorCode of
     // ----------------- INGEAR COMPONENT ERROR MESSAGES -------------------------
@@ -1784,13 +2580,14 @@ begin
   if (FReadStack.Count > 0) then
   begin
     FProcessReadPacket := False;
-    ReadPacket := FReadStack.Objects[0] as TPLCReadPacket;
-    if Assigned(ReadPacket) then
-    begin
-      ReadPacket.Free;
-      ReadPacket := Nil;
-      FReadStack.Delete(0);
-    end; // If
+//    ReadPacket := FReadStack.Objects[0] as TPLCReadPacket; //!!
+    FReadStack.Dequeue;
+//    if Assigned(ReadPacket) then   //!!
+//    begin                          //!!
+//      ReadPacket.Free;
+//      ReadPacket := Nil;           //!!
+//      FReadStack.Delete(0); //!!
+//    end; // If                     //!!
     PrimePLCForNextRead(FReadState);
   end; // If
   FReadErrorNum := nErrorCode;
@@ -1801,7 +2598,7 @@ begin
       Synchronize(DoReadRecoverableErrorEvent);
   end
   else
-  begin       
+  begin
     Inc(FReadFaultCount);
     FReadFault := (FReadFaultCount >= FReadFaultTol);
     if Not Terminated then
@@ -1812,7 +2609,7 @@ end; // TPLCReadThread.PLCReadErrorEvent3
 procedure TPLCWriteThread.PLCWriteErrorEvent(Sender : TObject; nErrorCode : TintErrorCode);
 var
   Msg : ShortString;
-  lWritePacket : TPLCWritePacket;
+  lWritePacket : IPLCPacket;
 begin
   case nErrorCode of
     // ----------------- INGEAR COMPONENT ERROR MESSAGES -------------------------
@@ -1993,7 +2790,8 @@ begin
   end
   else
   begin
-    lWritePacket := FWriteStack.Objects[0] as TPLCWritePacket;
+//    lWritePacket := FWriteStack.Objects[0] as TPLCWritePacket; //!!
+    lWritePacket := FWriteStack.Peek;
     lWritePacket.TransactionPhase := 3;
     Inc(FWriteFaultCount);
     FWriteFault := (FWriteFaultCount >= FWriteFaultTol);
@@ -2017,7 +2815,7 @@ end; // TPLCMonitor.InitializePLC
 
 function TPLCWriteThread.WriteBitToPLC(pFile : Shortstring; pWordNumber : integer; BitNumber : integer; intSize : integer; Value : boolean) : Boolean;
 var
-  lPacket : TPLCWritePacket;
+  lPacket : IPLCPacket;
 begin
   Result := False;
   if Not FWriteFault then
@@ -2042,7 +2840,7 @@ end; // TPLCWriteThread.WriteBitToPLC
 
 function TPLCWriteThread.WriteWordToPLC(pFile : Shortstring; pWordNumber : integer; intSize : integer; Value : SmallInt) : Boolean;
 var
-  lPacket : TPLCWritePacket;
+  lPacket : IPLCPacket;
 begin
   Result := False;
   if Not FWriteFault then
@@ -2080,25 +2878,28 @@ end; // TPLCMonitor.SetWatchDogInterval
 
 procedure TPLCReadThread.PrimePLCForNextRead(Value : integer);
 begin
-  FPLCRead.ClearControl;
-  case Value of
-    0 : begin // Binary;
-          FPLCRead.FileAddr := FInputFile;
-          FPLCRead.Size := FInputReadSize;
-        end; // 0
-    1 : begin // Input
-          FPLCRead.FileAddr := FOutputFile;
-          FPLCRead.Size := FOutputReadSize;
-        end; // 1
-    2 : begin // Output
-          FPLCRead.FileAddr := FStatusFile;
-          FPLCRead.Size := FStatusReadSize;
-        end; // 2
-    3 : begin // Status
-          FPLCRead.FileAddr := FBinaryFile;
-          FPLCRead.Size := FBinaryReadSize;
-        end; // 3
-  end; // Case
+  if assigned(FPLCRead) then
+  begin
+    FPLCRead.ClearControl;
+    case Value of
+      0 : begin // Binary;
+            FPLCRead.FileAddr := FInputFile;
+            FPLCRead.Size := FInputReadSize;
+          end; // 0
+      1 : begin // Input
+            FPLCRead.FileAddr := FOutputFile;
+            FPLCRead.Size := FOutputReadSize;
+          end; // 1
+      2 : begin // Output
+            FPLCRead.FileAddr := FStatusFile;
+            FPLCRead.Size := FStatusReadSize;
+          end; // 2
+      3 : begin // Status
+            FPLCRead.FileAddr := FBinaryFile;
+            FPLCRead.Size := FBinaryReadSize;
+          end; // 3
+    end; // Case
+  end;
 end; // TPLCWriteThread.PrimePLCForNextRead
 
 function TPLCMonitor.ProcessorMode(ModuleType,intProcessorMode : Integer) : ShortString;
@@ -2116,7 +2917,7 @@ begin
   end; // Case
 end; // TPLCMonitor.ProcessorMode
 
-function TPLCWriteThread.AddToWriteStack(lPacket : TPLCWritePacket) : Boolean;
+function TPLCWriteThread.AddToWriteStack(lPacket : IPLCPacket) : Boolean;
 var
   OKToAdd : Boolean;
 begin
@@ -2128,13 +2929,14 @@ begin
       OKToAdd := WaitForSingleObject(UsingWriteStack,1000) = Wait_Object_0;
       if OKToAdd then
       begin
-        FWriteStack.AddObject(IntToStr(FWriteStack.Count),lPacket);
+//        FWriteStack.AddObject(IntToStr(FWriteStack.Count),lPacket as TPLCWritePacket); //!!
+        FWriteStack.Enqueue(lPacket);
         ReleaseSemaphore(UsingWriteStack,1,Nil);
       end
-      else
-      begin
-        lPacket.Free;
-      end; // If
+//      else
+//      begin
+//        lPacket.Free;
+//      end; // If
     end; // If
   end; // If
   Result := OKToAdd;
@@ -2159,13 +2961,14 @@ procedure TPLCMonitor.LoadPLCConfiguration(lFileName : ShortString);
 var
   INIFile : TStRegINI;
   i : integer;
-  lMainModule : TPLCMainModule;
-  lDigitalInputModule : TDigitalInputModule;
-  lDigitalOutputModule : TDigitalOutputModule;
-  lAnalogInputModule : TAnalogInputModule;
-  lRTDAnalogInputModule : TRTDAnalogInputModule;
-  lAnalogOutputModule : TAnalogOutputModule;
-  lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
+  lMainModule : IPLCMainModule;
+  lDigitalInputModule : IDigitalIOModule;
+  lDigitalOutputModule : IDigitalIOModule;
+  lAnalogInputModule : IAnalogModule;
+  lRTDAnalogInputModule : IAnalogModule;
+  lAnalogOutputModule : IAnalogModule;
+  lRelayedDigitalOutputModule : IDigitalIOModule;
+  lModuleWords: TModuleWords;
 begin
   if FileExists(lFileName) then
   begin
@@ -2176,7 +2979,7 @@ begin
       begin
 //        if Assigned(FPLCReadThread) then
 //          FPLCReadThread.Suspend;
-        Modules[i].Free;
+//        Modules[i].Free;
         Modules[i] := Nil;
         if Assigned(FPLCReadThread) then
           FPLCReadThread.Start;
@@ -2224,32 +3027,42 @@ begin
                   // Start Digital Input Data word for the Processor module should be set to 0
                   // End Digital Input Data word should be set to 3
                   // ** Data included in the 'I' (Inputs) file **
-                  lMainModule.DigitalInputModuleWords[0,0] := ReadInteger('StartDigitalInputWord',0);
-                  lMainModule.DigitalInputModuleWords[0,1] := ReadInteger('EndDigitalInputWord',0);
+                  lModuleWords := lMainModule.DigitalInputModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartDigitalInputWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndDigitalInputWord',0);
+                  lMainModule.DigitalInputModuleWords := lModuleWords;
                   // Start Digital Output Data word for the Processor module should be set to 0
                   // End Digital Output Data word should be set to 3
                   // ** Data included in the 'O' (Outputs) file **
-                  lMainModule.DigitalOutputModuleWords[0,0] := ReadInteger('StartDigitalOutputDataWord',0);
-                  lMainModule.DigitalOutputModuleWords[0,1] := ReadInteger('EndDigitalOutputDataWord',0);
-                  // Stsrt Analog Input Data word for the Processor module should be set to 4
+                  lModuleWords := lMainModule.DigitalOutputModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartDigitalOutputDataWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndDigitalOutputDataWord',0);
+                  lMainModule.DigitalOutputModuleWords := lModuleWords;
+                  // Start Analog Input Data word for the Processor module should be set to 4
                   // End Analog Input Data word should be set to 7
                   // ** Data included in the 'I' (Inputs) file **
-                  lMainModule.AnalogInputModuleWords[0,0] := ReadInteger('StartAnalogInputWord',0);
-                  lMainModule.AnalogInputModuleWords[0,1] := ReadInteger('EndAnalogInputWord',0);
-                  lMainModule.AnalogInputModuleWords[1,0] := ReadInteger('StartAnalogInputStatusWord',0);
-                  lMainModule.AnalogInputModuleWords[1,1] := ReadInteger('EndAnalogInputStatusWord',0);
-                  // Stsrt Analog Output Data word for the Processor module should be set to 4
+                  lModuleWords := lMainModule.AnalogInputModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartAnalogInputWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndAnalogInputWord',0);
+                  lModuleWords[1,0] := ReadInteger('StartAnalogInputStatusWord',0);
+                  lModuleWords[1,1] := ReadInteger('EndAnalogInputStatusWord',0);
+                  lMainModule.AnalogInputModuleWords := lModuleWords;
+                  // Start Analog Output Data word for the Processor module should be set to 4
                   // End Analog Output Data word should be set to 5
                   // ** Data included in the 'O' (Outputs) file **
-                  lMainModule.AnalogOutputModuleWords[0,0] := ReadInteger('StartAnalogOutputDataWord',0);
-                  lMainModule.AnalogOutputModuleWords[0,1] := ReadInteger('EndAnalogOutputDataWord',0);
-                  lMainModule.AnalogOutputModuleWords[1,0] := ReadInteger('StartAnalogOutputStatusWord',0);
-                  lMainModule.AnalogOutputModuleWords[1,1] := ReadInteger('EndAnalogOutputStatusWord',0);
+                  lModuleWords := lMainModule.AnalogOutputModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartAnalogOutputDataWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndAnalogOutputDataWord',0);
+                  lModuleWords[1,0] := ReadInteger('StartAnalogOutputStatusWord',0);
+                  lModuleWords[1,1] := ReadInteger('EndAnalogOutputStatusWord',0);
+                  lMainModule.AnalogOutputModuleWords := lModuleWords;
                   // Start Request Bits word for the Processor module should be set to 0
                   // End Request Bits word should be set to [# of words in the 'B3' PLC file minus 1]
                   // ** Data included in the 'B3' (PC Request Bits) file **
-                  lMainModule.RequestBits_ModuleWords[0,0] := ReadInteger('StartRequestBitsWord',0);
-                  lMainModule.RequestBits_ModuleWords[0,1] := ReadInteger('EndRequestBitsWord',0);
+                  lModuleWords := lMainModule.RequestBits_ModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartRequestBitsWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndRequestBitsWord',0);
+                  lMainModule.RequestBits_ModuleWords := lModuleWords;
                   Modules[i] := lMainModule;
                 end; // 0
             1 : begin // Digital Input Module
@@ -2259,10 +3072,12 @@ begin
                   // Start and End Digital Input Data words for the Expansion modules should be set to the same number
                   // Look at the 'I' (Inputs) file on the PLC for the value based on slot (module number)
                   // ** Data included in the 'I' (Inputs) file **
-                  lDigitalInputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
-                  lDigitalInputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
-                  lDigitalInputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
-                  lDigitalInputModule.ModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lModuleWords := lDigitalInputModule.ModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartDataWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndDataWord',0);
+                  lModuleWords[1,0] := ReadInteger('StartStatusWord',0);
+                  lModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lDigitalInputModule.ModuleWords := lModuleWords;
                   Modules[i] := lDigitalInputModule;
                 end; // 1
             2 : begin // Digital Output Module
@@ -2272,10 +3087,12 @@ begin
                   // Start and End Digital Output Data words for the Expansion modules should be set to the same number
                   // Look at the 'O' (Outputs) file on the PLC for the value based on slot (module number)
                   // ** Data included in the 'O' (Outputs) file **
-                  lDigitalOutputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
-                  lDigitalOutputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
-                  lDigitalOutputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
-                  lDigitalOutputModule.ModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lModuleWords := lDigitalOutputModule.ModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartDataWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndDataWord',0);
+                  lModuleWords[1,0] := ReadInteger('StartStatusWord',0);
+                  lModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lDigitalOutputModule.ModuleWords := lModuleWords;
                   Modules[i] := lDigitalOutputModule;
                 end; // 2
             3 : begin // Analog Input Module
@@ -2287,10 +3104,12 @@ begin
                   // Start Analog Input Status word should be set to [Start Analog Input Data word + 4]
                   // End Analog Input Status word should be set to [Start Analog Input Data word + 6]
                   // ** Data and Status included in the 'I' (Inputs) file **
-                  lAnalogInputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
-                  lAnalogInputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
-                  lAnalogInputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
-                  lAnalogInputModule.ModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lModuleWords := lAnalogInputModule.ModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartDataWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndDataWord',0);
+                  lModuleWords[1,0] := ReadInteger('StartStatusWord',0);
+                  lModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lAnalogInputModule.ModuleWords := lModuleWords;
                   Modules[i] := lAnalogInputModule;
                 end; // 3
             4 : begin // Analog Output Module
@@ -2300,11 +3119,13 @@ begin
                   // Look at the 'O' (Outputs) file on the PLC for the Start Analog Output Data word based on slot (module number)
                   // End Analog Output Data word should be set to [Start Analog Output Data word + 3]
                   // ** Data and Status included in the 'O' (Outputs) file **
-                  lAnalogOutputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
-                  lAnalogOutputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
-                  lAnalogOutputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
-                  lAnalogOutputModule.ModuleWords[1,1] := ReadInteger('EndStatusWord',0);
-                  Modules[i] := lAnalogOutputModule
+                  lModuleWords := lAnalogOutputModule.ModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartDataWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndDataWord',0);
+                  lModuleWords[1,0] := ReadInteger('StartStatusWord',0);
+                  lModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lAnalogOutputModule.ModuleWords := lModuleWords;
+                  Modules[i] := lAnalogOutputModule;
                 end; // 4
             5 : begin
                   lRelayedDigitalOutputModule := TRelayedDigitalOutputModule.Create;
@@ -2313,10 +3134,12 @@ begin
                   // Start and End Digital Output Data words for the Expansion modules should be set to the same number
                   // Look at the 'O' (Outputs) file on the PLC for the value based on slot (module number)
                   // ** Data included in the 'O' (outputs) file **
-                  lRelayedDigitalOutputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
-                  lRelayedDigitalOutputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
-                  lRelayedDigitalOutputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
-                  lRelayedDigitalOutputModule.ModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lModuleWords := lRelayedDigitalOutputModule.ModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartDataWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndDataWord',0);
+                  lModuleWords[1,0] := ReadInteger('StartStatusWord',0);
+                  lModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lRelayedDigitalOutputModule.ModuleWords := lModuleWords;
                   Modules[i] := lRelayedDigitalOutputModule;
                 end; // 5
             6 : begin // RTD Analog Input Module
@@ -2328,10 +3151,12 @@ begin
                   // Start RTD Analog Input Status word should be set to [Start RTD Analog Input Data word + 4]
                   // End RTD Analog Input Status word should be set to [Start RTD Analog Input Data word + 6]
                   // ** Data and Status included in the 'I' (Inputs) file **
-                  lRTDAnalogInputModule.ModuleWords[0,0] := ReadInteger('StartDataWord',0);
-                  lRTDAnalogInputModule.ModuleWords[0,1] := ReadInteger('EndDataWord',0);
-                  lRTDAnalogInputModule.ModuleWords[1,0] := ReadInteger('StartStatusWord',0);
-                  lRTDAnalogInputModule.ModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lModuleWords := lRTDAnalogInputModule.ModuleWords;
+                  lModuleWords[0,0] := ReadInteger('StartDataWord',0);
+                  lModuleWords[0,1] := ReadInteger('EndDataWord',0);
+                  lModuleWords[1,0] := ReadInteger('StartStatusWord',0);
+                  lModuleWords[1,1] := ReadInteger('EndStatusWord',0);
+                  lRTDAnalogInputModule.ModuleWords := lModuleWords;
                   Modules[i] := lRTDAnalogInputModule;
                 end; // 6
           end; // Case
@@ -2381,8 +3206,8 @@ var
   lProcessorMode,
   lMajorError : integer;
   lMainModule : TPLCMainModule;
-  lDigitalInputModule : TDigitalInputModule;
-  lDigitalOutputModule : TDigitalOutputModule;
+  lDigitalInputModule : IDigitalIOModule;
+  lDigitalOutputModule : IDigitalIOModule;
   lAnalogInputModule : TAnalogInputModule;
   lRTDAnalogInputModule : TRTDAnalogInputModule;
   lAnalogOutputModule : TAnalogOutputModule;
@@ -2761,7 +3586,7 @@ begin
                     WriteInteger('EndStatusWord',(Modules[i] as TRTDAnalogInputModule).ModuleWords[1,1]);
                   end; // 3
             end; // Case
-            Modules[i].Free;
+//            Modules[i].Free;
             Modules[i] := nil;
           end; // For i
         end; // If
@@ -3013,7 +3838,7 @@ begin
     PLCMonitor.OnValueReadFromPLC(Self,FReadPacketRec);
 end; // TPLCReadThread.DoReturnValueFromPLC
 
-procedure TPLCReadThread.AddToReadStack(lPacket : TPLCReadPacket);
+procedure TPLCReadThread.AddToReadStack(lPacket : IPLCPacket);
 var
   OKToAdd : LongInt;
 begin
@@ -3024,20 +3849,21 @@ begin
       OKToAdd := WaitForSingleObject(UsingReadStack,1000);
       if (OKToAdd = Wait_Object_0) then
       begin
-        FReadStack.AddObject(IntToStr(FReadStack.Count + 1),lPacket);
+//        FReadStack.AddObject(IntToStr(FReadStack.Count + 1),lPacket as TPLCReadPacket); //!!
+        FReadStack.Enqueue(lPacket);
         ReleaseSemaphore(UsingReadStack,1,Nil);
       end
-      else
-      begin
-        lPacket.Free;
-      end; // If
+//      else
+//      begin
+//        lPacket.Free;
+//      end; // If
     end; // If
   end; // If
 end; // TPLCReadThread.AddToReadStack
- 
+
 procedure TPLCReadThread.ReadBitFromPLC(pFile : ShortString; pWordNumber : integer; BitNumber : integer; intSize : integer);
 var
-  PLCReadPacket : TPLCReadPacket;
+  PLCReadPacket : IPLCPacket;
 begin
   PLCReadPacket := TPLCReadPacket.Create;
   with PLCReadPacket do
@@ -3054,7 +3880,7 @@ end; // TPLCReadThread.ReadBitFromPLC
 
 procedure TPLCReadThread.ReadWordFromPLC(pFile : ShortString; pWordNumber : integer; intSize : integer);
 var
-  PLCReadPacket : TPLCReadPacket;
+  PLCReadPacket : IPLCPacket;
 begin
   PLCReadPacket := TPLCReadPacket.Create;
   with PLCReadPacket do
@@ -3085,11 +3911,11 @@ var
   i : LongInt;
   ConfigError : Boolean;
   lMainModule : TPLCMainModule;
-  lDigitalInputModule : TDigitalInputModule;
-  lDigitalOutputModule : TDigitalOutputModule;
-  lAnalogInputModule : TAnalogInputModule;
-  lAnalogOutputModule : TAnalogOutputModule;
-  lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
+  lDigitalInputModule : IDigitalIOModule;
+  lDigitalOutputModule : IDigitalIOModule;
+  lAnalogInputModule : IAnalogModule;
+  lAnalogOutputModule : IAnalogModule;
+  lRelayedDigitalOutputModule : IDigitalIOModule;
   StrErrorMessages : ShortString;
 begin
   Result := True;
@@ -3113,7 +3939,8 @@ begin
               ConfigError := ((AnalogOutputModuleWords[0,1] - AnalogOutputModuleWords[0,0]) > 1) or ((AnalogOutputModuleWords[0,1] - AnalogOutputModuleWords[0,0]) < 0);
               if ConfigError then
                 StrErrorMessages := StrErrorMessages + format('[Module:%d Main Module]Invalid range defined for Analog Output Module Words',[ModuleNumber]) + #13#10;
-              ConfigError := ((RequestBits_ModuleWords[0,1] - RequestBits_ModuleWords[0,0]) > (High(Request_Bits_Status) + 1)) or ((RequestBits_ModuleWords[0,1] - RequestBits_ModuleWords[0,0]) < 0);
+              ConfigError := ((RequestBits_ModuleWords[0,1] - RequestBits_ModuleWords[0,0]) > (Request_Bits_Status_Size + 1)) or
+                             ((RequestBits_ModuleWords[0,1] - RequestBits_ModuleWords[0,0]) < 0);
               if ConfigError then
                 StrErrorMessages := StrErrorMessages + format('[Module:%d Main Module]Invalid range defined for Request Bits Module Words',[ModuleNumber]) + #13#10;
             end; // With
@@ -3327,22 +4154,29 @@ end; // TPLCMonitor.GetEthernetTimeOut
 
 procedure TPLCReadThread.SetEthernetTimeOut(Value : SmallInt);
 begin
-  FPLCRead.Timeout := Value;
+  if assigned(FPLCRead) then
+    FPLCRead.Timeout := Value;
 end; // TPLCReadThread.SetEthernetTimeOut
 
 function TPLCReadThread.GetEthernetTimeOut : SmallInt;
 begin
-  Result := FPLCRead.Timeout;
+  if assigned(FPLCRead) then
+    Result := FPLCRead.Timeout
+  else
+    Result := -1;
 end; // TPLCReadThread.GetEthernetTimeOut
 
 procedure TPLCWriteThread.SetEthernetTimeOut(Value : SmallInt);
 begin
-  FPLCWrite.Timeout := Value;
+  if assigned(FPLCWrite) then
+    FPLCWrite.Timeout := Value;
 end; // TPLCWriteThread.SetEthernetTimeOut
 
 function TPLCWriteThread.GetEthernetTimeOut : SmallInt;
 begin
-  Result := FPLCWrite.Timeout;
+  result := 0;
+  if assigned(FPLCWrite) then
+    Result := FPLCWrite.Timeout;
 end; // TPLCWriteThread.GetEthernetTimeOut
 
 procedure TPLCMonitor.SetMaximumWriteAttempts(Value : LongInt);
