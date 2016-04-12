@@ -64,6 +64,7 @@ Type
  TModuleWords = array[0..1,0..1] of integer; // Index zero is the location of the first module word the second index holds the location of the last module word
 // TModuleWords = TArray<TArray<integer>>;
  IPLCPacket = interface(IInvokable)
+ ['{8700A1D1-C879-4995-8B35-1DF699361921}']
    procedure SetSize(aValue: LongInt);
    function GetSize: LongInt;
    procedure SetFileType(aValue: ShortString);
