@@ -62,7 +62,7 @@ Type
  TBitsArray = array[0..99] of TBitArray;
  TWordsArray = array[0..99] of TWord;
  TModuleWords = array[0..1,0..1] of integer; // Index zero is the location of the first module word the second index holds the location of the last module word
-
+// TModuleWords = TArray<TArray<integer>>;
  IPLCPacket = interface(IInvokable)
    procedure SetSize(aValue: LongInt);
    function GetSize: LongInt;
@@ -215,18 +215,19 @@ Type
 //                    ProcessorMode : Integer;
 // end; // TProcessorInfo
 
- TModule = record // Generic Module container
-   ModuleNumber : Integer;
-   ModuleType : Integer; // 0 Input 1 Output
-   ModuleWords : TModuleWords;
-   ChannelDataValue : array[0..3] of Double;
-   ChannelSign : array[0..3] of Integer;
-   ChannelStatus : array[0..3] of boolean;
-   ChannelOverRangeFlag : array[0..3] of boolean;
-   ChannelUnderRangeFlag : array[0..3] of boolean;
- end; // TModule
+// TModule = record // Generic Module container
+//   ModuleNumber : Integer;
+//   ModuleType : Integer; // 0 Input 1 Output
+//   ModuleWords : TModuleWords;
+//   ChannelDataValue : array[0..3] of Double;
+//   ChannelSign : array[0..3] of Integer;
+//   ChannelStatus : array[0..3] of boolean;
+//   ChannelOverRangeFlag : array[0..3] of boolean;
+//   ChannelUnderRangeFlag : array[0..3] of boolean;
+// end; // TModule
 
  IPLCMainModule = interface(IInvokable)
+['{EA530DDD-BDCA-4BED-874C-368EB5815369}']
    function GetModuleNumber: integer;
    procedure SetModuleNumber(aValue: integer);
    function GetModuleType: integer;
@@ -316,11 +317,11 @@ Type
      FAnalogInputModuleWords,
      FAnalogOutputModuleWords,
      FRequestBits_ModuleWords : TModuleWords;
-     FDigitalInputData : array[0..3] of TBitArray;
-     FAnalogInputData : array[0..3] of Double;
-     FDigitalOutputData : array[0..3] of TBitArray;
-     FAnalogOutputData : array[0..1] of Double;
-     FRequest_Bits_Status : array[0..9] of TBitArray;
+     FDigitalInputData : TArray<TBitArray>;//array[0..3] of TBitArray;
+     FAnalogInputData : TArray<Double>;//array[0..3] of Double;
+     FDigitalOutputData : TArray<TBitArray>;//array[0..3] of TBitArray;
+     FAnalogOutputData : TArray<Double>;//array[0..1] of Double;
+     FRequest_Bits_Status : TArray<TBitArray>;//array[0..9] of TBitArray;
      function GetModuleNumber: integer;
      procedure SetModuleNumber(aValue: integer);
      function GetModuleType: integer;
@@ -398,6 +399,7 @@ Type
  end; // TPLCMainModule
 
  IDigitalIOModule = interface(IInvokable)
+ ['{87F04121-64FB-41C4-A60D-68F2D8AFEF3F}']
    function GetModuleNumber: Integer;
    procedure SetModuleNumber(aValue: integer);
    function GetModuleType: Integer;
@@ -471,6 +473,7 @@ Type
  end; // TRelayedDigitalOutputModule
 
  IAnalogModule = interface(IInvokable)
+ ['{9D5660E5-388E-4464-A685-680485092781}']
    function GetModuleNumber: Integer;
    procedure SetModuleNumber(aValue: integer);
    function GetModuleType: Integer;
@@ -553,8 +556,8 @@ Type
      property ChannelUnderRangeFlag[aIndex: integer]: boolean read GetChannelUnderRangeFlag write SetChannelUnderRangeFlag;
  end;
 
- TAnalogInputModule = TBaseAnalogModule;
- TAnalogOutputModule = TBaseAnalogModule;
+ TAnalogInputModule = class(TBaseAnalogModule);
+ TAnalogOutputModule = class(TBaseAnalogModule);
 
  TRTDAnalogInputModule = class(TBaseAnalogModule)
    public
@@ -622,7 +625,6 @@ Type
    FPLCWrite : TABCTL;
    FWriteFault : Boolean;
    FWriteStack : IQueue<IPLCPacket>;
-//   FWriteStack : TStringList;  //!!
    FLastPacketWritten : TPLCWritePacketRecord;
    FLastPacketWithError : TPLCWritePacketRecord;
    FWriteErrorNum : Integer;
@@ -698,7 +700,6 @@ Type
    FModuleCount : Integer;
    FModuleType : TModuleType;
    FModules : TModuleArray;
-//   FReadStack : TStringList; //!!
    FReadStack : IQueue<IPLCPacket>;
    FProcessReadPacket : Boolean;
    FReadPacketRec : TPLCReadPacketRec;
@@ -912,6 +913,7 @@ uses RegularExpressions, Math;
 var
   UsingWriteStack : LongInt;
   UsingReadStack  : LongInt;
+  hashErrCodeToErrMsg : IDictionary<integer, shortstring>;
 
 procedure Register;
 begin
@@ -1320,10 +1322,12 @@ begin
   FillChar(FDigitalOutputModuleWords,SizeOf(FDigitalOutputModuleWords),#0);
   FillChar(FAnalogInputModuleWords,SizeOf(FAnalogInputModuleWords),#0);
   FillChar(FAnalogOutputModuleWords,SizeOf(FAnalogOutputModuleWords),#0);
-  FillChar(FDigitalInputData,SizeOf(FDigitalInputData),#0);
-  FillChar(FAnalogInputData,SizeOf(FAnalogInputData),#0);
-  FillChar(FDigitalOutputData,SizeOf(FDigitalOutputData),#0);
-  FillChar(FAnalogOutputData,SizeOf(FAnalogOutputData),#0);
+  fillchar(FRequestBits_ModuleWords,SizeOf(FRequestBits_ModuleWords),#0);
+  SetLength(FDigitalInputData,4);
+  SetLength(FAnalogInputData,4);
+  SetLength(FDigitalOutputData,4);
+  SetLength(FAnalogOutputData,2);
+  SetLength(FRequest_Bits_Status,10);
 end; // TPLCMainModule.Create
 {$endregion}
 
@@ -1523,15 +1527,10 @@ begin
   FModuleType := 0;
   FModuleError := False;
   FillChar(FModuleWords,SizeOf(FModuleWords),#0);
-//  FillChar(FChannelDataValue,SizeOf(FChannelDataValue),#0);
   SetLength(FChannelDataValue, 4);
-//  FillChar(FChannelStatus,SizeOf(FChannelStatus),#0);
   SetLength(FChannelStatus, 4);
-//  FillChar(FChannelOverRangeFlag,SizeOf(FChannelOverRangeFlag),#0);
   SetLength(FChannelOverRangeFlag, 4);
-//  FillChar(FChannelUnderRangeFlag,SizeOf(FChannelUnderRangeFlag),#0);
   SetLength(FChannelUnderRangeFlag, 4);
-//  FillChar(FChannelOpenCircuitFlag,SizeOf(FChannelOpenCircuitFlag), #0);
   SetLength(FChannelOpenCircuitFlag, 4);
 end; // TBaseAnalogModule.Create
 {$endregion}
@@ -1667,16 +1666,7 @@ begin
     FPLCRead := Nil;
   end; // If
   if FReadStack.Count > 0 then
-  begin
-//    repeat          //!!
-//      ReadPacket := FReadStack.Objects[0] as TPLCReadPacket; //!!
-      FReadStack.Clear;
-//      ReadPacket.Free;
-//      ReadPacket := Nil;   //!!
-//      FReadStack.Delete(0); //!!
-//    until FReadStack.Count = 0; //!!
-  end; // If
-//  FReadStack.Free; //!!
+    FReadStack.Clear;
   FReadStack := Nil;
   inherited Destroy;
 end; // TPLCReadThread.Destroy
@@ -1714,8 +1704,6 @@ begin
   FReadEnabled := False;
   FReadIPAddress := '0.0.0.0';
   FModulesLoaded := False;
-//  FReadStack := TStringList.Create;               //!!
-//  FReadStack.Clear;                               //!!
   FReadStack := TCollections.CreateQueue<IPLCPacket>;
   FProcessReadPacket := False;
   FillChar(FReadPacketRec,SizeOf(FReadPacketRec),#0);
@@ -1760,7 +1748,6 @@ begin
     begin
       if Terminated then
         Exit;
-//      ReadPacket := FReadStack.Objects[0] as TPLCReadPacket; //!!
       ReadPacket := FReadStack.Peek;
       if Assigned(ReadPacket) then
       begin
@@ -1784,7 +1771,6 @@ begin
             if Not Terminated and Not FReadFault then
               Trigger;
           end; // With
-//        ReadPacket := Nil;  //!!
       end; // If
     end; // If
   end; // If
@@ -1980,16 +1966,7 @@ begin
     FPLCWrite := Nil;
   end; // If
   if FWriteStack.Count > 0 then
-  begin
-//    repeat  //!!
-//      TransmitPacket := FWriteStack.Objects[0] as TPLCWritePacket;  //!!
-      FWriteStack.Clear;
-//      TransmitPacket.Free;
-//      TransmitPacket := Nil; //!!
-//      FWriteStack.Delete(0);  //!!
-//    until FWriteStack.Count = 0;  //!!
-  end; // If
-//  FWriteStack.Free;                  //!!
+    FWriteStack.Clear;
   FWriteStack := Nil;
   inherited Destroy;
 end; // TPLCWriteThread.Destroy
@@ -2001,8 +1978,6 @@ begin
   FWriteEnabled := False;
   FillChar(FLastPacketWritten,SizeOf(FLastPacketWritten),#0);
   Fillchar(FLastPacketWithError,SizeOf(FLastPacketWithError),#0);
-//  FWriteStack := TStringList.Create; //!!
-//  FWriteStack.Clear;                 //!!
   FWriteStack := TCollections.CreateQueue<IPLCPacket>;
   FWriteErrorNum := 0;
   FWriteErrorStr := '';
@@ -2050,7 +2025,6 @@ begin
           if Not FPLCWrite.Busy then
           begin
             FillChar(FLastPacketWritten,SizeOf(FLastPacketWritten),#0);
-//            TransmitPacket := FWriteStack.Objects[0] as TPLCWritePacket; //!!
             TransmitPacket := FWriteStack.Dequeue;
             if ValidatePacket(TransmitPacket) then
             begin
@@ -2086,19 +2060,21 @@ begin
 { TODO :
 This if/then/else can probably be re-written to eliminate need for else since
 true path does nothing. }
-              if (TransmitPacket.TransactionPhase <> 3) or (TransmitPacket.TransmitAttempts = FWriteAttemptsBeforeFail) then
-              begin
-//                TransmitPacket.Free;
-              end
-              else
-              begin // Put Packet back at the top to try again later...
+//              if (TransmitPacket.TransactionPhase <> 3) or (TransmitPacket.TransmitAttempts = FWriteAttemptsBeforeFail) then
+//              begin
+////                TransmitPacket.Free;
+//              end
+//              else
+//              begin // Put Packet back at the top to try again later...
+//                TransmitPacket.TransmitAttempts := TransmitPacket.TransmitAttempts + 1;
+//                FWriteStack.Enqueue(TransmitPacket);
+//              end; // If
+              if (TransmitPacket.TransactionPhase = 3) and (TransmitPacket.TransmitAttempts < FWriteAttemptsBeforeFail) then
+              begin // Put Packet back at the back of the queue to try again later...
                 TransmitPacket.TransmitAttempts := TransmitPacket.TransmitAttempts + 1;
-//                FWriteStack.AddObject(IntToStr(FWriteStack.Count),TransmitPacket as TPLCWritePacket); // Add to top of write stack. //!!
                 FWriteStack.Enqueue(TransmitPacket);
               end; // If
             end; // If
-//            TransmitPacket := Nil;  //!!
-//            FWriteStack.Delete(0);         //!!
           end; // If
         until Terminated or (FWriteStack.Count = 0);
       end; // If
@@ -2287,7 +2263,6 @@ begin
   FReadFaultCount := 0;
   if FProcessReadPacket then
   begin
-//    ReadPacket := FReadStack.Objects[0] as TPLCReadPacket; //!!
     ReadPacket := FReadStack.DeQueue;
     if Assigned(ReadPacket) then
     begin
@@ -2312,9 +2287,6 @@ begin
         end;
         TransactionPhase := ReadPacket.TransactionPhase;
       end; // With
-//      ReadPacket.Free;
-//      ReadPacket := Nil;       //!!
-//      FReadStack.Delete(0);    //!!
       FProcessReadPacket := False;
       Synchronize(DoReturnValueFromPLC);
       PrimePLCForNextRead(FReadState);
@@ -2407,187 +2379,12 @@ var
   Msg : ShortString;
   ReadPacket : IPLCPacket;
 begin
-  case nErrorCode of
-    // ----------------- INGEAR COMPONENT ERROR MESSAGES -------------------------
-    {$IFDEF INGEAR_Version_52}
-    -32768 : msg := 'IN-GEAR Says: compatability mode file missing.';
-    -28672 : msg := 'IN-GEAR Says: Remote node cannot buffer command';
-    -20480 : msg := 'IN-GEAR Says: Remote node problem due to download.';
-    -16284 : msg := 'IN-GEAR Says: Cannot execute due to active IPBS.';
-    -4095  : msg := 'IN-GEAR Says: A field has an illegal value.';
-    -4094  : msg := 'IN-GEAR Says: Less levels specified in adddress than minimum for any address.';
-    -4093  : msg := 'IN-GEAR Says: More levels specified in address than system supports.';
-    -4092  : msg := 'IN-GEAR Says: Symbol not found.';
-    -4091  : msg := 'IN-GEAR Says: Symbol is not proper format.';
-    -4090  : msg := 'IN-GEAR Says: File address doesn''t point to something useful.';
-    -4089  : msg := 'IN-GEAR Says: File is wrong size.';
-    -4088  : msg := 'IN-GEAR Says: Cannot complete request.';
-    -4087  : msg := 'IN-GEAR Says: Data or file is too large.';
-    -4086  : msg := 'IN-GEAR Says: Transaction plus word size is too large.';
-    -4085  : msg := 'IN-GEAR Says: Access Denied.';
-    -4084  : msg := 'IN-GEAR Says: Condition cannot be generated.';
-    -4083  : msg := 'IN-GEAR Says: Condition already exists.';
-    -4082  : msg := 'IN-GEAR Says: Command cannot be executed.';
-    -4081  : msg := 'IN-GEAR Says: Histogram overflow.';
-    -4080  : msg := 'IN-GEAR Says: No Access.';
-    -4079  : msg := 'IN-GEAR Says: Illegal data type.';
-    -4078  : msg := 'IN-GEAR Says: Invalid paramerter or invalid data.';
-    -4077  : msg := 'IN-GEAR Says: Address reference exists to deleted area.';
-    -4076  : msg := 'IN-GEAR Says: Command execution failure for unknown reason';
-    -4075  : msg := 'IN-GEAR Says: Data Conversion Error.';
-    {$ENDIF}
-    -1     : msg := 'IN-GEAR Says: The Adapter Property is pointing to an adpater that has not been properly configured, or is not operating.';
-    -2     : msg := 'IN-GEAR Says: Reserved';
-    -3     : msg := 'IN-GEAR Says: The PLC did not respoind to the Read/Write request and the IN-GEAR driver timed out.';
-    -4     : msg := 'IN-GEAR Says: The Ethernet PLC did not respond with in the required time. TIMEOUT.';
-    -5     : msg := 'IN-GEAR Says: IN-GEAR driver error. More than one application or process is trying to use a KT/KTx/SST/DF1 connection on the PLC Network.';
-    -6     : msg := 'IN-GEAR Says: Invalid funtion for this PLC.';
-    -7     : msg := 'IN-GEAR Says: Ethernet connection request failed to PLC.';
-    260    : msg := 'IN-GEAR Says: Invalid Tag Name.';
-    511    : msg := 'IN-GEAR Says: Invalid data type for tag name(ControlLogix5550) - invalid type-declaration character for tag name.';
-    512    : msg := 'IN-GEAR Says: Cannot guarantee delivery. Invalid node assigned.  Non existing DH+/DH-485 network address.';
-    768    : msg := 'IN-GEAR Says: Duplicate token hold detected.';
-    1024   : msg := 'IN-GEAR Says: Local port is disconnected.';
-    1280   : msg := 'IN-GEAR Says: Application layer timed out waiting for response.';
-    1536   : msg := 'IN-GEAR Says: Duplicate Node detected.';
-    1792   : msg := 'IN-GEAR Says: Station is offline';
-    2048   : msg := 'IN-GEAR Says: Hardware Fault';
-    4096   : msg := 'IN-GEAR Says: Illegal command format.  The PLC does not recognize the FileAddr Property setting or cannot execute the Function Property command.';
-    8192   : msg := 'IN-GEAR Says: Host has problems and cannot commuicate.';
-    12288  : msg := 'IN-GEAR Says: Remote node is missing, disconnected or shutdown.';
-    16384  : msg := 'IN-GEAR Says: Host could not complete function due to hardware fault.';
-    20480  : msg := 'IN-GEAR Says: Addressing Problem.';
-    24576  : msg := 'IN-GEAR Says: Function disallowed.';
-    28672  : msg := 'IN-GEAR Says: Processor in program mode.';
-    30539  : msg := 'IN-GEAR Says: INGEAR license is invalid or has expired.';
-    {$IFDEF INGEAR_Version_60}
-    // Expanded Micrologix/SLC/PLC-5 Error Codes
-    32768  : msg := 'IN-GEAR Says: Compatibility mode file missing.';
-    36864  : msg := 'IN-GEAR Says: Remote node cannot buffer command.';
-    45056  : msg := 'IN-GEAR Says: Remote node problem due to download.';
-    49152  : msg := 'IN-GEAR Says: Cannot execute due to active IPBS.';
-    61441  : msg := 'IN-GEAR Says: A fild has an illegal value.';
-    61442  : msg := 'IN-GEAR Says: Less levels specified in address than system supports.';
-    61443  : msg := 'IN-GEAR Says: More levels specified in address than system supports.';
-    61444  : msg := 'IN-GEAR Says: Symbol not found';
-    61445  : msg := 'IN-GEAR Says: Symbol is not proper format.';
-    61446  : msg := 'IN-GEAR Says: File address doesn''t point to something useful.';
-    61447  : msg := 'IN-GEAR Says: File is wrong size.';
-    61448  : msg := 'IN-GEAR Says: Cannot complete request.';
-    61449  : msg := 'IN-GEAR Says: Data or file is too large.';
-    61450  : msg := 'IN-GEAR Says: Transaction plus word size is too large.';
-    61451  : msg := 'IN-GEAR Says: Access denied.';
-    61452  : msg := 'IN-GEAR Says: Condition cannot be generated.';
-    61453  : msg := 'IN-GEAR Says: Condition already exists.';
-    61454  : msg := 'IN-GEAR Says: Command cannot be executed.';
-    61455  : msg := 'IN-GEAR Says: Histogram Overflow.';
-    61456  : msg := 'IN-GEAR Says: No access.';
-    61457  : msg := 'IN-GEAR Says: Illegal data type.';
-    61458  : msg := 'IN-GEAR Says: Invalid parameteror invalid data.';
-    61459  : msg := 'IN-GEAR Says: Address reference exists to deleted area.';
-    61460  : msg := 'IN-GEAR Says: Command execution failure for unknown reason.';
-    61461  : msg := 'IN-GEAR Says: Data conversion error.';
-    // Ethernet IP and CIP Error Codes
-    1      : msg := 'IN-GEAR Says: Connection failure.';
-    2      : msg := 'IN-GEAR Says: Insufficient resources.';
-    3      : msg := 'IN-GEAR Says: Value invalid.';
-    4      : msg := 'IN-GEAR Says: Malformed tag or tag does not exist.';
-    5      : msg := 'IN-GEAR Says: Unknown destination.';
-    6      : msg := 'IN-GEAR Says: Data requested would not fin in response packet.';
-    7      : msg := 'IN-GEAR Says: Loss of connection.';
-    8      : msg := 'IN-GEAR Says: Unsupported service.';
-    9      : msg := 'IN-GEAR Says: Error in data segment or inalid attribute value.';
-    10     : msg := 'IN-GEAR Says: Attribute list error.';
-    11     : msg := 'IN-GEAR Says: State already exists.';
-    12     : msg := 'IN-GEAR Says: Object model conflict.';
-    13     : msg := 'IN-GEAR Says: Object already exists.';
-    14     : msg := 'IN-GEAR Says: Attribute not settable.';
-    15     : msg := 'IN-GEAR Says: Permission Denied.';
-    16     : msg := 'IN-GEAR Says: Device state conflict.';
-    17     : msg := 'IN-GEAR Says: Relpy to large.';
-    18     : msg := 'IN-GEAR Says: Fragment primitive.';
-    19     : msg := 'IN-GEAR Says: Insufficient command data or parameters specified to execute service.';
-    20     : msg := 'IN-GEAR Says: Attribute not supported.';
-    21     : msg := 'IN-GEAR Says: Too much data specified.';
-    26     : msg := 'IN-GEAR Says: Bridge request too large.';
-    27     : msg := 'IN-GEAR Says: Bridge response too large.';
-    28     : msg := 'IN-GEAR Says: Attribute list short.';
-    29     : msg := 'IN-GEAR Says: Invalid attribute list.';
-    30     : msg := 'IN-GEAR Says: Failure during connection.';
-    34     : msg := 'IN-GEAR Says: Invalid received.';
-    35     : msg := 'IN-GEAR Says: Key segment error.';
-    37     : msg := 'IN-GEAR Says: Number of IO words specified does not match IO word count.';
-    38     : msg := 'IN-GEAR Says: Unexpected attribute in list.';
-    255    : msg := 'IN-GEAR Says: General Error.';
-    // Extended CIP Error Codes
-    65792  : msg := 'IN-GEAR Says: Connection failure(Connection in use).';
-    65795  : msg := 'IN-GEAR Says: Connection failure(Transport not supported).';
-    65798  : msg := 'IN-GEAR Says: Connection failure(Ownership conflict).';
-    65799  : msg := 'IN-GEAR Says: Connection failure(Connection not found).';
-    65800  : msg := 'IN-GEAR Says: Connection failure(Invalid connection type).';
-    65801  : msg := 'IN-GEAR Says: Connection failure(Invalid connection size).';
-    65808  : msg := 'IN-GEAR Says: Connection failure(Module not configured).';
-    65809  : msg := 'IN-GEAR Says: Connection failure(ERP not supported).';
-    65812  : msg := 'IN-GEAR Says: Connection failure(Wrong module).';
-    65813  : msg := 'IN-GEAR Says: Connect failure(Wrong device type).';
-    65814  : msg := 'IN-GEAR Says: Connect failure(Wrong revision).';
-    65816  : msg := 'IN-GEAR Says: Connect failure(Invalid configuration format).';
-    65818  : msg := 'IN-GEAR Says: Connect failure(Application out of connections).';
-    66051  : msg := 'IN-GEAR Says: Connect failure(Connection timeout).';
-    66053  : msg := 'IN-GEAR Says: Connect failure(Unconnected message timeout).';
-    66054  : msg := 'IN-GEAR Says: Connect failure(Message too large).';
-    66305  : msg := 'IN-GEAR Says: Connect failure(No buffer memory).';
-    66306  : msg := 'IN-GEAR Says: Connect failure(Bandwidth not available).';
-    66307  : msg := 'IN-GEAR Says: Connect failure(No screeners available).';
-    66309  : msg := 'IN-GEAR Says: Connect failure(Signature match).';
-    66321  : msg := 'IN-GEAR Says: Connect failure(Port not available).';
-    66322  : msg := 'IN-GEAR Says: Connect failure(Link address not available).';
-    66325  : msg := 'IN-GEAR Says: Connect failure(Invalid segment type).';
-    66327  : msg := 'IN-GEAR Says: Connect failure(Connection not scheduled).';
-    66328  : msg := 'IN-GEAR Says: Connect failure(Link address to self is invalid).';
-    {$ENDIF}
-    // ------------------ END INGEAR COMPONENT ERROR MESSAGES --------------------
-    // ------------------ WINSOCK ERROR MESSAGES ---------------------------------
-    10004  : msg := 'Winsock Says: A blocking operation was interruped by a call to WSACancelBlockingCall.';
-    10013  : msg := 'Winsock Says: An attempt was made to access a socket in a way forbidden by its access permissions.';
-    10014  : msg := 'Winsock Says: The system detected an invalid pointer address in attempting to use a pointer argument in a call.';
-    10024  : msg := 'Winsock Says: Too man open sockets.';
-    10035  : msg := 'Winsock Says: A non-blocking socket operation could not be completed immediately';
-    10036  : msg := 'Winsock Says: A blocking opperation is currently executing.';
-    10037  : msg := 'Winsock Says: An operation was attempted on a non-blocking socket that already had an operation in progress.';
-    10038  : msg := 'Winsock Says: An operation was attempted on something that is not a socket.';
-    10050  : msg := 'Winsock Says: A socket operation encountered a dead network.';
-    10051  : msg := 'Winsock Says: A socket operation was attempted to an unreachable network.';
-    10052  : msg := 'Winsock Says: The connection has been broken due to keep-alive activity detecting a failure while the operation was in progress.';
-    10053  : msg := 'Winsock Says: An established connection was aborted by the software in your host machine.';
-    10054  : msg := 'Winsock Says: An existing connection was forcibly closed by the remote host.';
-    10055  : msg := 'Winsock Says: An operation on a socket could not be performed because the system lacked sufficient buffer space or because a queue was full.';
-    10056  : msg := 'Winsock Says: A connect request was made on an already connected socket.';
-    10057  : msg := 'Winsock Says: A request to send or recieve data was disallowed because the socket is not connected and (when sending on a datagram socket using sendto call) no address was supplied.';
-    10058  : msg := 'Winsock Says: A request to send or recieve was disallowed because the socket had already been shutdown in that direction with previous shutdown call.';
-    10059  : msg := 'Winsock Says: Too many references to some kernel object.';
-    10060  : msg := 'Winsock Says: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection fialed because connected host has failed to respond.';
-    10061  : msg := 'Winsock Says: No connection could be made because the traget machine activley refused it.';
-    10062  : msg := 'Winsock Says: Cannot translate name.';
-    10063  : msg := 'Winsock Says: Name component or name was too long.';
-    10064  : msg := 'Winsock Says: A socket operation failed because the destination host was down.';
-    10065  : msg := 'Winsock Says: A socket operation was attempted to an unreachable host.';
-    10067  : msg := 'Winsock Says: A Windows Sockets implementation may have a limit on the number of applications that may use it simultaneously.';
-    // ------------------ END WINSOCK ERROR MESSAGES -----------------------------
-  else
-    msg := 'Undocumented Error.'
-  end; // Case
+  if not hashErrCodeToErrMsg.TryGetValue(nErrorCode, Msg) then
+    msg := 'Undocumented Error.';
   if (FReadStack.Count > 0) then
   begin
     FProcessReadPacket := False;
-//    ReadPacket := FReadStack.Objects[0] as TPLCReadPacket; //!!
     FReadStack.Dequeue;
-//    if Assigned(ReadPacket) then   //!!
-//    begin                          //!!
-//      ReadPacket.Free;
-//      ReadPacket := Nil;           //!!
-//      FReadStack.Delete(0); //!!
-//    end; // If                     //!!
     PrimePLCForNextRead(FReadState);
   end; // If
   FReadErrorNum := nErrorCode;
@@ -2611,176 +2408,8 @@ var
   Msg : ShortString;
   lWritePacket : IPLCPacket;
 begin
-  case nErrorCode of
-    // ----------------- INGEAR COMPONENT ERROR MESSAGES -------------------------
-    {$IFDEF INGEAR_Version_52}
-    -32768 : msg := 'IN-GEAR Says: compatability mode file missing.';
-    -28672 : msg := 'IN-GEAR Says: Remote node cannot buffer command';
-    -20480 : msg := 'IN-GEAR Says: Remote node problem due to download.';
-    -16284 : msg := 'IN-GEAR Says: Cannot execute due to active IPBS.';
-    -4095  : msg := 'IN-GEAR Says: A field has an illegal value.';
-    -4094  : msg := 'IN-GEAR Says: Less levels specified in adddress than minimum for any address.';
-    -4093  : msg := 'IN-GEAR Says: More levels specified in address than system supports.';
-    -4092  : msg := 'IN-GEAR Says: Symbol not found.';
-    -4091  : msg := 'IN-GEAR Says: Symbol is not proper format.';
-    -4090  : msg := 'IN-GEAR Says: File address doesn''t point to something useful.';
-    -4089  : msg := 'IN-GEAR Says: File is wrong size.';
-    -4088  : msg := 'IN-GEAR Says: Cannot complete request.';
-    -4087  : msg := 'IN-GEAR Says: Data or file is too large.';
-    -4086  : msg := 'IN-GEAR Says: Transaction plus word size is too large.';
-    -4085  : msg := 'IN-GEAR Says: Access Denied.';
-    -4084  : msg := 'IN-GEAR Says: Condition cannot be generated.';
-    -4083  : msg := 'IN-GEAR Says: Condition already exists.';
-    -4082  : msg := 'IN-GEAR Says: Command cannot be executed.';
-    -4081  : msg := 'IN-GEAR Says: Histogram overflow.';
-    -4080  : msg := 'IN-GEAR Says: No Access.';
-    -4079  : msg := 'IN-GEAR Says: Illegal data type.';
-    -4078  : msg := 'IN-GEAR Says: Invalid paramerter or invalid data.';
-    -4077  : msg := 'IN-GEAR Says: Address reference exists to deleted area.';
-    -4076  : msg := 'IN-GEAR Says: Command execution failure for unknown reason';
-    -4075  : msg := 'IN-GEAR Says: Data Conversion Error.';
-    {$ENDIF}
-    -1     : msg := 'IN-GEAR Says: The Adapter Property is pointing to an adpater that has not been properly configured, or is not operating.';
-    -2     : msg := 'IN-GEAR Says: Reserved';
-    -3     : msg := 'IN-GEAR Says: The PLC did not respoind to the Read/Write request and the IN-GEAR driver timed out.';
-    -4     : msg := 'IN-GEAR Says: The Ethernet PLC did not respond with in the required time. TIMEOUT.';
-    -5     : msg := 'IN-GEAR Says: IN-GEAR driver error. More than one application or process is trying to use a KT/KTx/SST/DF1 connection on the PLC Network.';
-    -6     : msg := 'IN-GEAR Says: Invalid funtion for this PLC.';
-    -7     : msg := 'IN-GEAR Says: Ethernet connection request failed to PLC.';
-    260    : msg := 'IN-GEAR Says: Invalid Tag Name.';
-    511    : msg := 'IN-GEAR Says: Invalid data type for tag name(ControlLogix5550) - invalid type-declaration character for tag name.';
-    512    : msg := 'IN-GEAR Says: Cannot guarantee delivery. Invalid node assigned.  Non existing DH+/DH-485 network address.';
-    768    : msg := 'IN-GEAR Says: Duplicate token hold detected.';
-    1024   : msg := 'IN-GEAR Says: Local port is disconnected.';
-    1280   : msg := 'IN-GEAR Says: Application layer timed out waiting for response.';
-    1536   : msg := 'IN-GEAR Says: Duplicate Node detected.';
-    1792   : msg := 'IN-GEAR Says: Station is offline';
-    2048   : msg := 'IN-GEAR Says: Hardware Fault';
-    4096   : msg := 'IN-GEAR Says: Illegal command format.  The PLC does not recognize the FileAddr Property setting or cannot execute the Function Property command.';
-    8192   : msg := 'IN-GEAR Says: Host has problems and cannot commuicate.';
-    12288  : msg := 'IN-GEAR Says: Remote node is missing, disconnected or shutdown.';
-    16384  : msg := 'IN-GEAR Says: Host could not complete function due to hardware fault.';
-    20480  : msg := 'IN-GEAR Says: Addressing Problem.';
-    24576  : msg := 'IN-GEAR Says: Function disallowed.';
-    28672  : msg := 'IN-GEAR Says: Processor in program mode.';
-    30539  : msg := 'IN-GEAR Says: INGEAR license is invalid or has expired.';
-    {$IFDEF INGEAR_Version_60}
-    // Expanded Micrologix/SLC/PLC-5 Error Codes
-    32768  : msg := 'IN-GEAR Says: Compatibility mode file missing.';
-    36864  : msg := 'IN-GEAR Says: Remote node cannot buffer command.';
-    45056  : msg := 'IN-GEAR Says: Remote node problem due to download.';
-    49152  : msg := 'IN-GEAR Says: Cannot execute due to active IPBS.';
-    61441  : msg := 'IN-GEAR Says: A fild has an illegal value.';
-    61442  : msg := 'IN-GEAR Says: Less levels specified in address than system supports.';
-    61443  : msg := 'IN-GEAR Says: More levels specified in address than system supports.';
-    61444  : msg := 'IN-GEAR Says: Symbol not found';
-    61445  : msg := 'IN-GEAR Says: Symbol is not proper format.';
-    61446  : msg := 'IN-GEAR Says: File address doesn''t point to something useful.';
-    61447  : msg := 'IN-GEAR Says: File is wrong size.';
-    61448  : msg := 'IN-GEAR Says: Cannot complete request.';
-    61449  : msg := 'IN-GEAR Says: Data or file is too large.';
-    61450  : msg := 'IN-GEAR Says: Transaction plus word size is too large.';
-    61451  : msg := 'IN-GEAR Says: Access denied.';
-    61452  : msg := 'IN-GEAR Says: Condition cannot be generated.';
-    61453  : msg := 'IN-GEAR Says: Condition already exists.';
-    61454  : msg := 'IN-GEAR Says: Command cannot be executed.';
-    61455  : msg := 'IN-GEAR Says: Histogram Overflow.';
-    61456  : msg := 'IN-GEAR Says: No access.';
-    61457  : msg := 'IN-GEAR Says: Illegal data type.';
-    61458  : msg := 'IN-GEAR Says: Invalid parameteror invalid data.';
-    61459  : msg := 'IN-GEAR Says: Address reference exists to deleted area.';
-    61460  : msg := 'IN-GEAR Says: Command execution failure for unknown reason.';
-    61461  : msg := 'IN-GEAR Says: Data conversion error.';
-    // Ethernet IP and CIP Error Codes
-    1      : msg := 'IN-GEAR Says: Connection failure.';
-    2      : msg := 'IN-GEAR Says: Insufficient resources.';
-    3      : msg := 'IN-GEAR Says: Value invalid.';
-    4      : msg := 'IN-GEAR Says: Malformed tag or tag does not exist.';
-    5      : msg := 'IN-GEAR Says: Unknown destination.';
-    6      : msg := 'IN-GEAR Says: Data requested would not fin in response packet.';
-    7      : msg := 'IN-GEAR Says: Loss of connection.';
-    8      : msg := 'IN-GEAR Says: Unsupported service.';
-    9      : msg := 'IN-GEAR Says: Error in data segment or inalid attribute value.';
-    10     : msg := 'IN-GEAR Says: Attribute list error.';
-    11     : msg := 'IN-GEAR Says: State already exists.';
-    12     : msg := 'IN-GEAR Says: Object model conflict.';
-    13     : msg := 'IN-GEAR Says: Object already exists.';
-    14     : msg := 'IN-GEAR Says: Attribute not settable.';
-    15     : msg := 'IN-GEAR Says: Permission Denied.';
-    16     : msg := 'IN-GEAR Says: Device state conflict.';
-    17     : msg := 'IN-GEAR Says: Relpy to large.';
-    18     : msg := 'IN-GEAR Says: Fragment primitive.';
-    19     : msg := 'IN-GEAR Says: Insufficient command data or parameters specified to execute service.';
-    20     : msg := 'IN-GEAR Says: Attribute not supported.';
-    21     : msg := 'IN-GEAR Says: Too much data specified.';
-    26     : msg := 'IN-GEAR Says: Bridge request too large.';
-    27     : msg := 'IN-GEAR Says: Bridge response too large.';
-    28     : msg := 'IN-GEAR Says: Attribute list short.';
-    29     : msg := 'IN-GEAR Says: Invalid attribute list.';
-    30     : msg := 'IN-GEAR Says: Failure during connection.';
-    34     : msg := 'IN-GEAR Says: Invalid received.';
-    35     : msg := 'IN-GEAR Says: Key segment error.';
-    37     : msg := 'IN-GEAR Says: Number of IO words specified does not match IO word count.';
-    38     : msg := 'IN-GEAR Says: Unexpected attribute in list.';
-    255    : msg := 'IN-GEAR Says: General Error.';
-    // Extended CIP Error Codes
-    65792  : msg := 'IN-GEAR Says: Connection failure(Connection in use).';
-    65795  : msg := 'IN-GEAR Says: Connection failure(Transport not supported).';
-    65798  : msg := 'IN-GEAR Says: Connection failure(Ownership conflict).';
-    65799  : msg := 'IN-GEAR Says: Connection failure(Connection not found).';
-    65800  : msg := 'IN-GEAR Says: Connection failure(Invalid connection type).';
-    65801  : msg := 'IN-GEAR Says: Connection failure(Invalid connection size).';
-    65808  : msg := 'IN-GEAR Says: Connection failure(Module not configured).';
-    65809  : msg := 'IN-GEAR Says: Connection failure(ERP not supported).';
-    65812  : msg := 'IN-GEAR Says: Connection failure(Wrong module).';
-    65813  : msg := 'IN-GEAR Says: Connect failure(Wrong device type).';
-    65814  : msg := 'IN-GEAR Says: Connect failure(Wrong revision).';
-    65816  : msg := 'IN-GEAR Says: Connect failure(Invalid configuration format).';
-    65818  : msg := 'IN-GEAR Says: Connect failure(Application out of connections).';
-    66051  : msg := 'IN-GEAR Says: Connect failure(Connection timeout).';
-    66053  : msg := 'IN-GEAR Says: Connect failure(Unconnected message timeout).';
-    66054  : msg := 'IN-GEAR Says: Connect failure(Message too large).';
-    66305  : msg := 'IN-GEAR Says: Connect failure(No buffer memory).';
-    66306  : msg := 'IN-GEAR Says: Connect failure(Bandwidth not available).';
-    66307  : msg := 'IN-GEAR Says: Connect failure(No screeners available).';
-    66309  : msg := 'IN-GEAR Says: Connect failure(Signature match).';
-    66321  : msg := 'IN-GEAR Says: Connect failure(Port not available).';
-    66322  : msg := 'IN-GEAR Says: Connect failure(Link address not available).';
-    66325  : msg := 'IN-GEAR Says: Connect failure(Invalid segment type).';
-    66327  : msg := 'IN-GEAR Says: Connect failure(Connection not scheduled).';
-    66328  : msg := 'IN-GEAR Says: Connect failure(Link address to self is invalid).';
-    {$ENDIF}
-    // ------------------ END INGEAR COMPONENT ERROR MESSAGES --------------------
-    // ------------------ WINSOCK ERROR MESSAGES ---------------------------------
-    10004  : msg := 'Winsock Says: A blocking operation was interruped by a call to WSACancelBlockingCall.';
-    10013  : msg := 'Winsock Says: An attempt was made to access a socket in a way forbidden by its access permissions.';
-    10014  : msg := 'Winsock Says: The system detected an invalid pointer address in attempting to use a pointer argument in a call.';
-    10024  : msg := 'Winsock Says: Too man open sockets.';
-    10035  : msg := 'Winsock Says: A non-blocking socket operation could not be completed immediately';
-    10036  : msg := 'Winsock Says: A blocking opperation is currently executing.';
-    10037  : msg := 'Winsock Says: An operation was attempted on a non-blocking socket that already had an operation in progress.';
-    10038  : msg := 'Winsock Says: An operation was attempted on something that is not a socket.';
-    10050  : msg := 'Winsock Says: A socket operation encountered a dead network.';
-    10051  : msg := 'Winsock Says: A socket operation was attempted to an unreachable network.';
-    10052  : msg := 'Winsock Says: The connection has been broken due to keep-alive activity detecting a failure while the operation was in progress.';
-    10053  : msg := 'Winsock Says: An established connection was aborted by the software in your host machine.';
-    10054  : msg := 'Winsock Says: An existing connection was forcibly closed by the remote host.';
-    10055  : msg := 'Winsock Says: An operation on a socket could not be performed because the system lacked sufficient buffer space or because a queue was full.';
-    10056  : msg := 'Winsock Says: A connect request was made on an already connected socket.';
-    10057  : msg := 'Winsock Says: A request to send or recieve data was disallowed because the socket is not connected and (when sending on a datagram socket using sendto call) no address was supplied.';
-    10058  : msg := 'Winsock Says: A request to send or recieve was disallowed because the socket had already been shutdown in that direction with previous shutdown call.';
-    10059  : msg := 'Winsock Says: Too many references to some kernel object.';
-    10060  : msg := 'Winsock Says: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection fialed because connected host has failed to respond.';
-    10061  : msg := 'Winsock Says: No connection could be made because the traget machine activley refused it.';
-    10062  : msg := 'Winsock Says: Cannot translate name.';
-    10063  : msg := 'Winsock Says: Name component or name was too long.';
-    10064  : msg := 'Winsock Says: A socket operation failed because the destination host was down.';
-    10065  : msg := 'Winsock Says: A socket operation was attempted to an unreachable host.';
-    10067  : msg := 'Winsock Says: A Windows Sockets implementation may have a limit on the number of applications that may use it simultaneously.';
-    // ------------------ END WINSOCK ERROR MESSAGES -----------------------------
-  else
-    msg := 'Undocumented Error.'
-  end; // Case
+  if not hashErrCodeToErrMsg.TryGetValue(nErrorCode, Msg) then
+    msg := 'Undocumented Error.';
   FWriteErrorNum := nErrorCode;
   FWriteErrorStr := Msg;
   if ((FWriteErrorNum = 10035) or (FWriteErrorNum = 10036)) then
@@ -2790,7 +2419,6 @@ begin
   end
   else
   begin
-//    lWritePacket := FWriteStack.Objects[0] as TPLCWritePacket; //!!
     lWritePacket := FWriteStack.Peek;
     lWritePacket.TransactionPhase := 3;
     Inc(FWriteFaultCount);
@@ -2929,14 +2557,9 @@ begin
       OKToAdd := WaitForSingleObject(UsingWriteStack,1000) = Wait_Object_0;
       if OKToAdd then
       begin
-//        FWriteStack.AddObject(IntToStr(FWriteStack.Count),lPacket as TPLCWritePacket); //!!
         FWriteStack.Enqueue(lPacket);
         ReleaseSemaphore(UsingWriteStack,1,Nil);
       end
-//      else
-//      begin
-//        lPacket.Free;
-//      end; // If
     end; // If
   end; // If
   Result := OKToAdd;
@@ -3849,14 +3472,9 @@ begin
       OKToAdd := WaitForSingleObject(UsingReadStack,1000);
       if (OKToAdd = Wait_Object_0) then
       begin
-//        FReadStack.AddObject(IntToStr(FReadStack.Count + 1),lPacket as TPLCReadPacket); //!!
         FReadStack.Enqueue(lPacket);
         ReleaseSemaphore(UsingReadStack,1,Nil);
-      end
-//      else
-//      begin
-//        lPacket.Free;
-//      end; // If
+      end;
     end; // If
   end; // If
 end; // TPLCReadThread.AddToReadStack
@@ -4194,12 +3812,189 @@ begin
     Result := FMaximumWriteAttempts;
 end; // TPLCMonitor.GetMaximumWriteAttemps
 
+function RegisterErrorCodes: IDictionary<integer, ShortString>;
+begin
+  result := TCollections.CreateDictionary<integer, ShortString>;
+  with result do
+  begin
+    // ----------------- INGEAR COMPONENT ERROR MESSAGES -------------------------
+    {$IFDEF INGEAR_Version_52}
+    add(-32768,'IN-GEAR Says: compatability mode file missing.');
+    add(-28672,'IN-GEAR Says: Remote node cannot buffer command');
+    add(-20480,'IN-GEAR Says: Remote node problem due to download.');
+    add(-16284,'IN-GEAR Says: Cannot execute due to active IPBS.');
+    add(-4095,'IN-GEAR Says: A field has an illegal value.');
+    add(-4094,'IN-GEAR Says: Less levels specified in adddress than minimum for any address.');
+    add(-4093,'IN-GEAR Says: More levels specified in address than system supports.');
+    add(-4092,'IN-GEAR Says: Symbol not found.');
+    add(-4091,'IN-GEAR Says: Symbol is not proper format.');
+    add(-4090,'IN-GEAR Says: File address doesn''t point to something useful.');
+    add(-4089,'IN-GEAR Says: File is wrong size.');
+    add(-4088,'IN-GEAR Says: Cannot complete request.');
+    add(-4087,'IN-GEAR Says: Data or file is too large.');
+    add(-4086,'IN-GEAR Says: Transaction plus word size is too large.');
+    add(-4085,'IN-GEAR Says: Access Denied.');
+    add(-4084,'IN-GEAR Says: Condition cannot be generated.');
+    add(-4083,'IN-GEAR Says: Condition already exists.');
+    add(-4082,'IN-GEAR Says: Command cannot be executed.');
+    add(-4081,'IN-GEAR Says: Histogram overflow.');
+    add(-4080,'IN-GEAR Says: No Access.');
+    add(-4079,'IN-GEAR Says: Illegal data type.');
+    add(-4078,'IN-GEAR Says: Invalid paramerter or invalid data.');
+    add(-4077,'IN-GEAR Says: Address reference exists to deleted area.');
+    add(-4076,'IN-GEAR Says: Command execution failure for unknown reason');
+    add(-4075,'IN-GEAR Says: Data Conversion Error.');
+    {$ENDIF}
+    add(-1,'IN-GEAR Says: The Adapter Property is pointing to an adpater that has not been properly configured, or is not operating.');
+    add(-2,'IN-GEAR Says: Reserved');
+    add(-3,'IN-GEAR Says: The PLC did not respoind to the Read/Write request and the IN-GEAR driver timed out.');
+    add(-4,'IN-GEAR Says: The Ethernet PLC did not respond with in the required time. TIMEOUT.');
+    add(-5,'IN-GEAR Says: IN-GEAR driver error. More than one application or process is trying to use a KT/KTx/SST/DF1 connection on the PLC Network.');
+    add(-6,'IN-GEAR Says: Invalid funtion for this PLC.');
+    add(-7,'IN-GEAR Says: Ethernet connection request failed to PLC.');
+    add(260,'IN-GEAR Says: Invalid Tag Name.');
+    add(511,'IN-GEAR Says: Invalid data type for tag name(ControlLogix5550) - invalid type-declaration character for tag name.');
+    add(512,'IN-GEAR Says: Cannot guarantee delivery. Invalid node assigned.  Non existing DH+/DH-485 network address.');
+    add(768,'IN-GEAR Says: Duplicate token hold detected.');
+    add(1024,'IN-GEAR Says: Local port is disconnected.');
+    add(1280,'IN-GEAR Says: Application layer timed out waiting for response.');
+    add(1536,'IN-GEAR Says: Duplicate Node detected.');
+    add(1792,'IN-GEAR Says: Station is offline');
+    add(2048,'IN-GEAR Says: Hardware Fault');
+    add(4096,'IN-GEAR Says: Illegal command format.  The PLC does not recognize the FileAddr Property setting or cannot execute the Function Property command.');
+    add(8192,'IN-GEAR Says: Host has problems and cannot commuicate.');
+    add(12288,'IN-GEAR Says: Remote node is missing, disconnected or shutdown.');
+    add(16384,'IN-GEAR Says: Host could not complete function due to hardware fault.');
+    add(20480,'IN-GEAR Says: Addressing Problem.');
+    add(24576,'IN-GEAR Says: Function disallowed.');
+    add(28672,'IN-GEAR Says: Processor in program mode.');
+    add(30539,'IN-GEAR Says: INGEAR license is invalid or has expired.');
+    {$IFDEF INGEAR_Version_60}
+    // Expanded Micrologix/SLC/PLC-5 Error Codes
+    add(32768,'IN-GEAR Says: Compatibility mode file missing.');
+    add(36864,'IN-GEAR Says: Remote node cannot buffer command.');
+    add(45056,'IN-GEAR Says: Remote node problem due to download.');
+    add(49152,'IN-GEAR Says: Cannot execute due to active IPBS.');
+    add(61441,'IN-GEAR Says: A fild has an illegal value.');
+    add(61442,'IN-GEAR Says: Less levels specified in address than system supports.');
+    add(61443,'IN-GEAR Says: More levels specified in address than system supports.');
+    add(61444,'IN-GEAR Says: Symbol not found');
+    add(61445,'IN-GEAR Says: Symbol is not proper format.');
+    add(61446,'IN-GEAR Says: File address doesn''t point to something useful.');
+    add(61447,'IN-GEAR Says: File is wrong size.');
+    add(61448,'IN-GEAR Says: Cannot complete request.');
+    add(61449,'IN-GEAR Says: Data or file is too large.');
+    add(61450,'IN-GEAR Says: Transaction plus word size is too large.');
+    add(61451,'IN-GEAR Says: Access denied.');
+    add(61452,'IN-GEAR Says: Condition cannot be generated.');
+    add(61453,'IN-GEAR Says: Condition already exists.');
+    add(61454,'IN-GEAR Says: Command cannot be executed.');
+    add(61455,'IN-GEAR Says: Histogram Overflow.');
+    add(61456,'IN-GEAR Says: No access.');
+    add(61457,'IN-GEAR Says: Illegal data type.');
+    add(61458,'IN-GEAR Says: Invalid parameteror invalid data.');
+    add(61459,'IN-GEAR Says: Address reference exists to deleted area.');
+    add(61460,'IN-GEAR Says: Command execution failure for unknown reason.');
+    add(61461,'IN-GEAR Says: Data conversion error.');
+    // Ethernet IP and CIP Error Codes
+    add(1,'IN-GEAR Says: Connection failure.');
+    add(2,'IN-GEAR Says: Insufficient resources.');
+    add(3,'IN-GEAR Says: Value invalid.');
+    add(4,'IN-GEAR Says: Malformed tag or tag does not exist.');
+    add(5,'IN-GEAR Says: Unknown destination.');
+    add(6,'IN-GEAR Says: Data requested would not fin in response packet.');
+    add(7,'IN-GEAR Says: Loss of connection.');
+    add(8,'IN-GEAR Says: Unsupported service.');
+    add(9,'IN-GEAR Says: Error in data segment or inalid attribute value.');
+    add(10,'IN-GEAR Says: Attribute list error.');
+    add(11,'IN-GEAR Says: State already exists.');
+    add(12,'IN-GEAR Says: Object model conflict.');
+    add(13,'IN-GEAR Says: Object already exists.');
+    add(14,'IN-GEAR Says: Attribute not settable.');
+    add(15,'IN-GEAR Says: Permission Denied.');
+    add(16,'IN-GEAR Says: Device state conflict.');
+    add(17,'IN-GEAR Says: Relpy to large.');
+    add(18,'IN-GEAR Says: Fragment primitive.');
+    add(19,'IN-GEAR Says: Insufficient command data or parameters specified to execute service.');
+    add(20,'IN-GEAR Says: Attribute not supported.');
+    add(21,'IN-GEAR Says: Too much data specified.');
+    add(26,'IN-GEAR Says: Bridge request too large.');
+    add(27,'IN-GEAR Says: Bridge response too large.');
+    add(28,'IN-GEAR Says: Attribute list short.');
+    add(29,'IN-GEAR Says: Invalid attribute list.');
+    add(30,'IN-GEAR Says: Failure during connection.');
+    add(34,'IN-GEAR Says: Invalid received.');
+    add(35,'IN-GEAR Says: Key segment error.');
+    add(37,'IN-GEAR Says: Number of IO words specified does not match IO word count.');
+    add(38,'IN-GEAR Says: Unexpected attribute in list.');
+    add(255,'IN-GEAR Says: General Error.');
+    // Extended CIP Error Codes
+    add(65792,'IN-GEAR Says: Connection failure(Connection in use).');
+    add(65795,'IN-GEAR Says: Connection failure(Transport not supported).');
+    add(65798,'IN-GEAR Says: Connection failure(Ownership conflict).');
+    add(65799,'IN-GEAR Says: Connection failure(Connection not found).');
+    add(65800,'IN-GEAR Says: Connection failure(Invalid connection type).');
+    add(65801,'IN-GEAR Says: Connection failure(Invalid connection size).');
+    add(65808,'IN-GEAR Says: Connection failure(Module not configured).');
+    add(65809,'IN-GEAR Says: Connection failure(ERP not supported).');
+    add(65812,'IN-GEAR Says: Connection failure(Wrong module).');
+    add(65813,'IN-GEAR Says: Connect failure(Wrong device type).');
+    add(65814,'IN-GEAR Says: Connect failure(Wrong revision).');
+    add(65816,'IN-GEAR Says: Connect failure(Invalid configuration format).');
+    add(65818,'IN-GEAR Says: Connect failure(Application out of connections).');
+    add(66051,'IN-GEAR Says: Connect failure(Connection timeout).');
+    add(66053,'IN-GEAR Says: Connect failure(Unconnected message timeout).');
+    add(66054,'IN-GEAR Says: Connect failure(Message too large).');
+    add(66305,'IN-GEAR Says: Connect failure(No buffer memory).');
+    add(66306,'IN-GEAR Says: Connect failure(Bandwidth not available).');
+    add(66307,'IN-GEAR Says: Connect failure(No screeners available).');
+    add(66309,'IN-GEAR Says: Connect failure(Signature match).');
+    add(66321,'IN-GEAR Says: Connect failure(Port not available).');
+    add(66322,'IN-GEAR Says: Connect failure(Link address not available).');
+    add(66325,'IN-GEAR Says: Connect failure(Invalid segment type).');
+    add(66327,'IN-GEAR Says: Connect failure(Connection not scheduled).');
+    add(66328,'IN-GEAR Says: Connect failure(Link address to self is invalid).');
+    {$ENDIF}
+    // ------------------ END INGEAR COMPONENT ERROR MESSAGES --------------------
+    // ------------------ WINSOCK ERROR MESSAGES ---------------------------------
+    add(10004,'Winsock Says: A blocking operation was interruped by a call to WSACancelBlockingCall.');
+    add(10013,'Winsock Says: An attempt was made to access a socket in a way forbidden by its access permissions.');
+    add(10014,'Winsock Says: The system detected an invalid pointer address in attempting to use a pointer argument in a call.');
+    add(10024,'Winsock Says: Too man open sockets.');
+    add(10035,'Winsock Says: A non-blocking socket operation could not be completed immediately');
+    add(10036,'Winsock Says: A blocking opperation is currently executing.');
+    add(10037,'Winsock Says: An operation was attempted on a non-blocking socket that already had an operation in progress.');
+    add(10038,'Winsock Says: An operation was attempted on something that is not a socket.');
+    add(10050,'Winsock Says: A socket operation encountered a dead network.');
+    add(10051,'Winsock Says: A socket operation was attempted to an unreachable network.');
+    add(10052,'Winsock Says: The connection has been broken due to keep-alive activity detecting a failure while the operation was in progress.');
+    add(10053,'Winsock Says: An established connection was aborted by the software in your host machine.');
+    add(10054,'Winsock Says: An existing connection was forcibly closed by the remote host.');
+    add(10055,'Winsock Says: An operation on a socket could not be performed because the system lacked sufficient buffer space or because a queue was full.');
+    add(10056,'Winsock Says: A connect request was made on an already connected socket.');
+    add(10057,'Winsock Says: A request to send or recieve data was disallowed because the socket is not connected and (when sending on a datagram socket using sendto call) no address was supplied.');
+    add(10058,'Winsock Says: A request to send or recieve was disallowed because the socket had already been shutdown in that direction with previous shutdown call.');
+    add(10059,'Winsock Says: Too many references to some kernel object.');
+    add(10060,'Winsock Says: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection fialed because connected host has failed to respond.');
+    add(10061,'Winsock Says: No connection could be made because the traget machine activley refused it.');
+    add(10062,'Winsock Says: Cannot translate name.');
+    add(10063,'Winsock Says: Name component or name was too long.');
+    add(10064,'Winsock Says: A socket operation failed because the destination host was down.');
+    add(10065,'Winsock Says: A socket operation was attempted to an unreachable host.');
+    add(10067,'Winsock Says: A Windows Sockets implementation may have a limit on the number of applications that may use it simultaneously.');
+    // ------------------ END WINSOCK ERROR MESSAGES -----------------------------
+  end; //with
+end;
+
 Initialization
 UsingWriteStack := CreateSemaphore(Nil,1,1,'WriteSemaphore');
 UsingReadStack := CreateSemaphore(Nil,1,1,'ReadSemaphore');
 // Initialize Semaphores
 ReleaseSemaphore(UsingWriteStack,1,Nil);
 ReleaseSemaphore(UsingReadStack,1,Nil);
+
+hashErrCodeToErrMsg := RegisterErrorCodes;
+
 
 Finalization
 CloseHandle(UsingWriteStack);
