@@ -28,6 +28,7 @@ type
     function Stop_DAP: boolean;
     function Reset_DAP: boolean;
     function Flush_DAP: boolean;
+    function DapPresent: boolean;
     function Get_Dap_Var(DapVar : string): string;
     procedure Set_Dap_Var(DapVar : string; Value : integer);
     procedure Send_DAPL_Command(aCommand : string);
@@ -38,6 +39,7 @@ type
     procedure ConvertAToDandSend(aFloatVal : double; aAtoDRange : double; aDapVarName : string);
     procedure SendStringToDAP(aString : string);
     procedure SendCCFileToDAP(aFilename : string);
+    procedure SendDaplFileToDap(aFilename: string);
     property OnNewBinaryData : TDAPNewBinaryData read GetOnNewBinaryData write SetOnNewBinaryData;
     property OnNewTextData : TDAPNewTextData read GetOnNewTextData write SetOnNewTextData;
   end;
@@ -127,6 +129,7 @@ type
     procedure AboutBox;
     function Int16BufferPut(Length: Integer; var Buffer: Smallint): Integer;
     function Int16BufferGet(Length: Integer; var Buffer: Smallint): Integer;
+    function GetOCXCreated: boolean;
     property BinaryHandle: Smallint read GetBinaryHandle write SetBinaryHandle;
     property Accel32Version: Smallint read GetAccel32Version write SetAccel32Version;
     property FlushTextInput: WordBool read GetFlushTextInput write SetFlushTextInput;
@@ -611,6 +614,11 @@ begin
     result := FDap.Int16BufferGet(Length, Buffer);
 end;
 
+function TDapInterface.GetOCXCreated: boolean;
+begin
+  result := FDap <> nil;
+end;
+
 constructor TDapInterface.Create(aDap: TDap);
 begin
   FDap := aDap;
@@ -657,6 +665,11 @@ begin
   result := lFlushBinaryInput and lFlushTextInput;
 end;
 
+function TDapControl.DapPresent: boolean;
+begin
+  result := FDapInterface.GetOCXCreated;
+end;
+
 function TDapControl.Reset_DAP: boolean;
 begin
   result := true;
@@ -684,8 +697,6 @@ function TDapControl.MinAdCount : integer;
 begin
   result := FMinAdCount;
 end;
-
-{ TDapControl}
 
 function TDapControl.ConvertDtoA(aDigitalVal : integer; aAtoDRange : double): double;
 begin
@@ -723,6 +734,12 @@ procedure TDapControl.SendCCFileToDAP(aFilename : string);
 begin
   inherited;
   FDapInterface.ccFile := aFilename;
+end;
+
+procedure TDapControl.SendDaplFileToDap(aFilename: string);
+begin
+  inherited;
+  FDapInterface.DaplFile := aFilename;
 end;
 
 procedure TDapInterface.SetOnNewBinaryData(aValue: TDapNewBinaryData);

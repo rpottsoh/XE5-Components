@@ -75,6 +75,7 @@ type
     function GetOnNewBinaryData: TDapNewBinaryData;
     procedure SetOnNewTextData(aValue: TDAPNewTextData);
     function GetOnNewTextData: TDapNewTextData;
+    function GetOCXCreated: boolean;
 
     //Methods and Properties
     procedure ReleaseDap;
@@ -127,6 +128,7 @@ type
     function Stop_DAP: boolean;
     function Reset_DAP: boolean;
     function Flush_DAP: boolean;
+    function DapPresent: boolean;
     function GetDAPData(aLength: integer; var aBuffer : smallint): integer;
     function Get_Dap_Var(DapVar : string): string;
     procedure Set_Dap_Var(DapVar : string; Value : integer);
@@ -141,6 +143,7 @@ type
     procedure ConvertAToDandSend(aFloatVal : double; aAtoDRange : double; aDapVarName : string);
     procedure SendStringToDAP(aString : string);
     procedure SendCCFileToDAP(aFilename : string);
+    procedure SendDaplFileToDap(aFilename: string);
     property OnNewBinaryData : TDAPNewBinaryData read GetOnNewBinaryData write SetOnNewBinaryData;
     property OnNewTextData : TDAPNewTextData read GetOnNewTextData write SetOnNewTextData;
   end;
