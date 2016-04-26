@@ -44,7 +44,7 @@ type
     property OnNewTextData : TDAPNewTextData read GetOnNewTextData write SetOnNewTextData;
   end;
 
-procedure RegisterTypes(aUseHardware : boolean=true);
+procedure RegisterDapControl(aUseHardware : boolean=true);
 function GetADAP: IDapControl;
 
 implementation
@@ -805,7 +805,7 @@ end;
 
 {$endregion}
 
-procedure RegisterTypes(aUseHardware : boolean=true);
+procedure RegisterDapControl(aUseHardware : boolean=true);
 begin
   GlobalContainer.RegisterType<TDapControl>.Implements<IDapControl>;
   GlobalContainer.RegisterType<TDapInterface>.Implements<IDapInterface>.DelegateTo
