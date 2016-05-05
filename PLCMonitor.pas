@@ -1663,8 +1663,8 @@ begin
   begin
     FPLCRead.Enabled := False;
     FreeAndNil(FPLCRead);
-    FPLCRead.Free;
-    FPLCRead := Nil;
+//    FPLCRead.Free;
+//    FPLCRead := Nil;
   end; // If
   if FReadStack.Count > 0 then
     FReadStack.Clear;
@@ -1954,7 +1954,7 @@ begin
     FWriteEnabled := Value;
     FPLCWrite.Enabled := FWriteEnabled;
   end; // If
-end; // TPLCWriteThread.SetEnabled
+end; // TPLCWriteThread.SetWriteEnabled
 
 destructor TPLCWriteThread.Destroy;
 var
@@ -2058,7 +2058,7 @@ begin
             end; // If
             if Assigned(TransmitPacket) then
             begin
-{ TODO :
+{ DONE :
 This if/then/else can probably be re-written to eliminate need for else since
 true path does nothing. }
 //              if (TransmitPacket.TransactionPhase <> 3) or (TransmitPacket.TransmitAttempts = FWriteAttemptsBeforeFail) then
@@ -2230,22 +2230,30 @@ procedure TPLCMonitor.SetEnabled(Value : Boolean);
 begin
   if FEnabled <> Value then
   begin
-    FEnabled := Value;
-    FPLCReadThread.ReadEnabled := FEnabled;
-    FPLCWriteThread.WriteEnabled := FEnabled;
-    FPLCWatchDogThread.WatchDogEnabled := FEnabled and FWatchDogActive;
-    if FEnabled and Not FThreadsStarted then
+    if Assigned(FPLCReadThread) and Assigned(FPLCWriteThread) and Assigned(FPLCWatchDogThread) then
     begin
-      FPLCReadThread.Start;
-      FPLCWriteThread.Start;
-      FPLCWatchDogThread.Start;
-      FThreadsStarted := True;
-    end; // If
-    if FEnabled then
+      FEnabled := Value;
+      FPLCReadThread.ReadEnabled := FEnabled;
+      FPLCWriteThread.WriteEnabled := FEnabled;
+      FPLCWatchDogThread.WatchDogEnabled := FEnabled and FWatchDogActive;
+      if FEnabled and Not FThreadsStarted then
+      begin
+        FPLCReadThread.Start;
+        FPLCWriteThread.Start;
+        FPLCWatchDogThread.Start;
+        FThreadsStarted := True;
+      end; // If
+      if FEnabled then
+      begin
+        InitializePLC;
+        SetReadInterval(FReadInterval);
+      end; // If
+    end
+    else
     begin
-      InitializePLC;
-      SetReadInterval(FReadInterval);
-    end; // If
+      // Force Enabled to False if PLC Threads not created
+      FEnabled := False;
+    end;
   end; // If
 end; // TPLCMonitor.SetEnabled
 
