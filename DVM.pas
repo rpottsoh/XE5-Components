@@ -264,7 +264,9 @@ begin
   FUnitsFont := FTitleFont;
   FTitle.Font := FTitleFont;
   FUnits.Font := FUnitsFont;
+  {$ifdef DELPHIXE}
   DoubleBuffered := true;
+  {$endif}
 end;
 
 //******************* FtoC *************************
