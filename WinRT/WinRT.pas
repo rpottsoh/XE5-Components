@@ -4,13 +4,13 @@
 //  Implementation of the tWinRT class.  This class encapsulates some of the
 //  functionality provided by the script commands to the WinRT preprocessor.
 //
-{$ifndef Package_Build}
-{$ifdef systest}
-  {$I ..\Conditionals.inc}
-{$else}
-  {$I Conditionals.inc}
-{$endif}
-{$endif}
+{_ifndef Package_Build}
+{_ifdef systest}
+  {_I ..\Conditionals.inc}
+{_else}
+  {_I Conditionals.inc}
+{_endif}
+{_endif}
 
 unit WinRT;
 {$H+}               { must use huge strings }
@@ -25,7 +25,7 @@ uses
 
 type
 
-  {$IFDEF DELPHIXE}
+  {$IFDEF WIN32}
   // for 32-Bit Windows specify ANSI related types...
   TPChar = PANSIChar;
   TChar = ANSIChar;

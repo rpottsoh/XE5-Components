@@ -86,6 +86,20 @@ end;
 
 TDapHandleQuery = TDapHandleQueryA;
 
+// Module service flag bits.
+type
+  TEDapModuleFlags = integer;
+const
+  dmf_NoCopy              =  $00000001; // do not copy the module file
+  dmf_NoLoad              =  $00000002; // do not load/unload the module
+  dmf_ForceLoad           =  $00000004; // force loading/unloading
+  dmf_NoReplace           =  $00000008; // do not replace the existing module file
+  dmf_ForceRegister       =  $00000010; // force register/unregister
+  dmf_RemoveDependents    =  $00000020; // remove dependent modules
+  dmf_Reserved1           =  $00000040; // reserved for internal use
+  dmf_OsDAPL2000          =  $00000100; // module intended for DAPL2000
+  dmf_OsDAPL3000          =  $00000200; // module intended for DAPL3000
+
 
 {Function only supported under Windows NT}
 function DapComPipeCreateA(pszPipeInfo: PANSIChar): Boolean; stdcall;
@@ -109,7 +123,7 @@ function DapOutputSpace(hAccel: TDapHandle): Integer; stdcall;
 function DapBufferGet(hAccel: TDapHandle; iLength: Integer;
   var pvBuffer): Integer; stdcall;
 function DapBufferGetEx(hAccel: TDapHandle; const pGetInfo: TDapBufferGetEx;
-  var pvBuffer): Integer; stdcall;  
+  var pvBuffer): Integer; stdcall;
 function DapBufferPut(hAccel: TDapHandle; iLength: Integer;
   const pvBuffer): Integer; stdcall;
 function DapBufferPutEx(hAccel: TDapHandle; const pPutInfo: TDapBufferPutEx;
@@ -132,7 +146,7 @@ function DapInputFlush(hAccel: TDapHandle): Integer; stdcall;
 function DapInputFlushEx(hAccel: TDapHandle; dwTimeOut: DWORD;
   dwTimeWait: DWORD; var pdwFlushed: DWORD): Boolean; stdcall;
 function DapOutputEmpty(hAccel: TDapHandle): Boolean; stdcall;
-  
+
 function DapInt16Get(hAccel: TDapHandle; var pi16: Smallint): Boolean; stdcall;
 function DapInt16Put(hAccel: TDapHandle; i16: Smallint): Boolean; stdcall;
 function DapInt32Get(hAccel: TDapHandle; var pi32: Longint): Boolean; stdcall;
@@ -148,6 +162,9 @@ function DapStringGetA(hAccel: TDapHandle; iLength: Integer; psz: PANSIChar): Bo
 function DapStringGet(hAccel: TDapHandle; iLength: Integer; psz: PANSIChar): Boolean; stdcall;
 function DapStringPutA(hAccel: TDapHandle; psz: PANSIChar): Boolean; stdcall;
 function DapStringPut(hAccel: TDapHandle; psz: PANSIChar): Boolean; stdcall;
+
+//function DapModuleLoadA(hAccel: TDapHandle; pszModPath: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleLoad(hAccel: TDapHandle; pszModPath: PANSIChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
 
 function DapLastErrorGet: string;
 
@@ -179,6 +196,9 @@ function DapCharPutA;    external DapioDll name 'DapCharPutA';
 function DapCharPut;     external DapioDll name 'DapCharPutA';
 function DapCommandDownloadA; external DapioDll name 'DapCommandDownloadA';
 function DapCommandDownload;  external DapioDll name 'DapCommandDownloadA';
+
+//function DapModuleLoadA;      external DapioDll name 'DapModuleLoadA';
+function DapModuleLoad;       external DapioDll name 'DapModuleLoadA';
 
 function DapConfigA;           external DapioDll name 'DapConfigA';
 function DapConfig;            external DapioDll name 'DapConfigA';

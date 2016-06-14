@@ -9,21 +9,9 @@ unit DAP_Inspector;
 
 interface
 
-uses Windows, Messages, SysUtils, Classes, DAPIO32;
+uses Windows, Messages, SysUtils, Classes, DAPIO32_TMSI;
 
 type
-  {_IFDEF DELPHIXE}
-  // When in DelphiXE or any unicode style IDE ANSI types must be used.
-//  TPChar = PWIDEChar;//PANSIChar;
-//  TChar = WIDEChar;//ANSIChar;
-//  TString = WIDEString;//ANSIString;
-  {_ELSE}
-  // When in Delphi 3 standard types are OK to use.
-  TPChar = PChar;
-  TChar = Char;
-  TString = String;
-  {_ENDIF}
-
   TQueryError = procedure(Sender : TObject; ErrorMsg : String) of Object;
   TDapMemFreeEvent = procedure(Sender : TObject; MemFree : DWord) of Object;
 
@@ -38,11 +26,11 @@ type
   ['{0F394EF2-7540-4347-A779-364AF4143F33}']
     function GetQueryError: TQueryError;
     procedure SetQueryError(aValue: TQueryError);
-    procedure DAP_QueryCreate(Var QueryStruct : TDapHandleQueryA; QueryKey : TPChar; QueryResultPtr : Pointer; Size : LongInt; Result_Type : TQuery_Result_Type);
-    function Handle_QueryString(ObjectHandle : TDapHandle; QueryItem : TPChar; Var Cmd_Success : Boolean) : String;
-    function Handle_QueryDWord(ObjectHandle : TDapHandle; QueryItem : TPChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
-    function Null_QueryString(QueryItem : TPChar; Var Cmd_Success : Boolean) : String;
-    function Null_QueryDWord(QueryItem : TPChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
+    procedure DAP_QueryCreate(Var QueryStruct : TDapHandleQueryA; QueryKey : T_PChar; QueryResultPtr : Pointer; Size : LongInt; Result_Type : TQuery_Result_Type);
+    function Handle_QueryString(ObjectHandle : TDapHandle; QueryItem : T_PChar; Var Cmd_Success : Boolean) : String;
+    function Handle_QueryDWord(ObjectHandle : TDapHandle; QueryItem : T_PChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
+    function Null_QueryString(QueryItem : T_PChar; Var Cmd_Success : Boolean) : String;
+    function Null_QueryDWord(QueryItem : T_PChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
     property OnQueryError : TQueryError
       read GetQueryError write SetQueryError;
   end;
@@ -243,11 +231,11 @@ type
   protected
     function GetQueryError: TQueryError;
     procedure SetQueryError(aValue: TQueryError);
-    procedure DAP_QueryCreate(Var QueryStruct : TDapHandleQueryA; QueryKey : TPChar; QueryResultPtr : Pointer; Size : LongInt; Result_Type : TQuery_Result_Type);
-    function Handle_QueryString(ObjectHandle : TDapHandle; QueryItem : TPChar; Var Cmd_Success : Boolean) : String;
-    function Handle_QueryDWord(ObjectHandle : TDapHandle; QueryItem : TPChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
-    function Null_QueryString(QueryItem : TPChar; Var Cmd_Success : Boolean) : String;
-    function Null_QueryDWord(QueryItem : TPChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
+    procedure DAP_QueryCreate(Var QueryStruct : TDapHandleQueryA; QueryKey : T_PChar; QueryResultPtr : Pointer; Size : LongInt; Result_Type : TQuery_Result_Type);
+    function Handle_QueryString(ObjectHandle : TDapHandle; QueryItem : T_PChar; Var Cmd_Success : Boolean) : String;
+    function Handle_QueryDWord(ObjectHandle : TDapHandle; QueryItem : T_PChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
+    function Null_QueryString(QueryItem : T_PChar; Var Cmd_Success : Boolean) : String;
+    function Null_QueryDWord(QueryItem : T_PChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
   public
     constructor Create(AOwner : TComponent); Override;
     destructor Destroy; Override;
@@ -501,9 +489,9 @@ type
   end; // TDAP_Inpsector
 
 const
-  DAP_Commands : Array[0..5] of TPChar = ('DapName','DapModel','DapOs','DapSerial','DaplMemFree','DaplMemTotal');
-  Server_Commands : Array[0..4] of TPChar = ('DapEnumerate','IsRemote','ServerName','ServerOs','ServerVersion');
-  Null_Commands : Array[0..1] of TPChar = ('ClientVersion','ServerEnumerate');
+  DAP_Commands : Array[0..5] of T_PChar = ('DapName','DapModel','DapOs','DapSerial','DaplMemFree','DaplMemTotal');
+  Server_Commands : Array[0..4] of T_PChar = ('DapEnumerate','IsRemote','ServerName','ServerOs','ServerVersion');
+  Null_Commands : Array[0..1] of T_PChar = ('ClientVersion','ServerEnumerate');
 
 
 procedure Register;
@@ -536,7 +524,7 @@ begin
   FQueryError := aValue;
 end;
 
-procedure TInspector_Base.DAP_QueryCreate(Var QueryStruct : TDapHandleQueryA; QueryKey : TPChar; QueryResultPtr : Pointer; Size : LongInt; Result_Type : TQuery_Result_Type);
+procedure TInspector_Base.DAP_QueryCreate(Var QueryStruct : TDapHandleQueryA; QueryKey : T_PChar; QueryResultPtr : Pointer; Size : LongInt; Result_Type : TQuery_Result_Type);
 begin
   FillChar(QueryStruct,SizeOf(QueryStruct),#0);
   with QueryStruct do
@@ -555,7 +543,7 @@ begin
   end; // With
 end; // TInspector_Base.DAP_QueryCreate
 
-function TInspector_Base.Handle_QueryString(ObjectHandle : TDapHandle; QueryItem : TPChar; Var Cmd_Success : Boolean) : String;
+function TInspector_Base.Handle_QueryString(ObjectHandle : TDapHandle; QueryItem : T_PChar; Var Cmd_Success : Boolean) : String;
 var
   Query : TDapHandleQueryA;
   QueryResult : TData_Buffer;
@@ -591,7 +579,7 @@ begin
   end; // If
 end; // TInspector_Base.Handle_QueryString
 
-function TInspector_Base.Handle_QueryDWord(ObjectHandle : TDapHandle; QueryItem : TPChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
+function TInspector_Base.Handle_QueryDWord(ObjectHandle : TDapHandle; QueryItem : T_PChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
 var
   Query : TDapHandleQueryA;
   QueryResult : TData_Buffer;
@@ -605,12 +593,12 @@ begin
     ErrorMsg := DapLastErrorTextGet(@ErrorMsg,SizeOf(ErrorMsg));
 end; // TInspector_Base.Handle_QueryDWord
 
-function TInspector_Base.Null_QueryString(QueryItem : TPChar; Var Cmd_Success : Boolean) : String;
+function TInspector_Base.Null_QueryString(QueryItem : T_PChar; Var Cmd_Success : Boolean) : String;
 begin
   Result := Handle_QueryString(0,QueryItem,Cmd_Success);
 end; // TInspector_Base.Null_QueryString
 
-function TInspector_Base.Null_QueryDWord(QueryItem : TPChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
+function TInspector_Base.Null_QueryDWord(QueryItem : T_PChar; Var Cmd_Success : Boolean; Var ErrorMsg : ShortString) : DWord;
 begin
   Result := Handle_QueryDWord(0,QueryItem,Cmd_Success,ErrorMsg);
 end; // TInspector_Base.Null_QueryDWord
@@ -779,7 +767,7 @@ begin
       if (FServerQuery_Handle > 0) then
         DapHandleClose(FServerQuery_Handle);
       FServerLocation := Value;
-      FServerQuery_Handle := DapHandleOpen(TPChar(TString(FServerLocation)),DAPOPEN_QUERY);
+      FServerQuery_Handle := DapHandleOpen(T_PChar(T_String(FServerLocation)),DAPOPEN_QUERY);
     end; // If
   end
   else
@@ -1030,7 +1018,7 @@ begin
       if (FDAPQuery_Handle > 0) then
         DapHandleClose(FDAPQuery_Handle);
       FDAPLocation := aValue;
-      FDAPQuery_Handle := DapHandleOpen(TPChar(TString(FDAPLocation)),DAPOPEN_QUERY);
+      FDAPQuery_Handle := DapHandleOpen(T_PChar(T_String(FDAPLocation)),DAPOPEN_QUERY);
     end; // If
   end
   else
@@ -1290,13 +1278,15 @@ var
   hAccel : TDapHandle;
   pDapList: Pointer;
   lFlags: DWORD;
+  lDapLocation: string;
 begin
   pDapList := nil;
   hAccel := 0;
-  hAccel := DapHandleOpen('\\.',DAPOPEN_WRITE);
+  lDapLocation := GetDAPLocation;
+  hAccel := DapHandleOpen(T_PChar(T_String(lDapLocation)),DAPOPEN_WRITE);
   lFlags := dmf_ForceLoad or dmf_OsDAPL2000;
 
-  if hAccel.ToBoolean and DapModuleLoad(hAccel, PWideChar(aFilename), lFlags, pDapList) then
+  if hAccel.ToBoolean and DapModuleLoad(hAccel, T_PChar(T_String(aFilename)), lFlags, pDapList) then
     result := true
   else
     result := false;

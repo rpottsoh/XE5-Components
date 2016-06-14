@@ -3,13 +3,13 @@
 //
 //  Implementation of classes to keep track of shadow variables.
 //
-{$ifndef Package_Build}
-{$ifdef systest}
-  {$I ..\Conditionals.inc}
-{$else}
-  {$I Conditionals.inc}
-{$endif}
-{$endif}
+{_ifndef Package_Build}
+{_ifdef systest}
+  {_I ..\Conditionals.inc}
+{_else}
+  {_I Conditionals.inc}
+{_endif}
+{_endif}
 unit WinRTDimItem;
 
 interface
@@ -19,7 +19,7 @@ uses
 
 type
 
-  {$IFDEF DELPHIXE}
+  {$IFDEF WIN32}
   // for 32-Bit Windows specify ANSI related types...
   TPChar = PANSIChar;
   TChar = ANSIChar;

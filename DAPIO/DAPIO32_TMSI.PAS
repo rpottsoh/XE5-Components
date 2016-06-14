@@ -11,8 +11,15 @@
 //  Copyright (c) 1996-2002, Microstar Laboratories, Inc.
 //
 ///////////////////////////////////////////////////////////////////
+//
+//  Updated by Ryan Potts @ TMSI LLC to cope with Unicode types
+//  used by modern Delphi compilers.  Support for versions before
+//  Delphi 2010 blocked,  See Dapio32_TMSI.inc
+//                                           6/14/2016
+///////////////////////////////////////////////////////////////////
+{$I Dapio32_TMSI.inc}
 
-unit Dapio32;
+unit Dapio32_TMSI;
 
 interface
 
@@ -21,6 +28,22 @@ uses
   {$IFDEF MSWINDOWS} Windows, {$ENDIF}
   {$IFDEF LINUX} Types, {$ENDIF}
   SysUtils;
+
+type
+  {$ifdef DELPHI_2010_UP}
+  T_Char   = ANSIChar;
+  T_PChar  = PANSIChar;
+  T_String = ANSIString;
+  TDapIoInt64 = int64;
+  {$else}   //If we really wanted to support older compilers (before D2010) these types should be used (rp 6/14/16)
+  T_Char   = Char;
+  T_PChar  = PChar;
+  T_String = string;
+  TDapIoInt64 = packed record //Only to be used with older version that predate int64 availability
+    dwLowPart: DWORD;
+    dwHighPart: DWORD;
+  end;
+  {$endif}
 
 const
   {$IFDEF MSWINDOWS} DapioDll = 'dapio32.dll'; {$ENDIF}
@@ -31,16 +54,18 @@ type
   HDAP = integer;
   // Define the TDapHandle type for compatability with Delphi symbols.
   TDapHandle = HDAP;
-type
+//type
   // Define TDapIoInt64 type
-  // VER80  - Delphi 1    
-  // VER90  - Delphi 2    
+  // VER80  - Delphi 1
+  // VER90  - Delphi 2
   // VER93  - C++Builder 1
-  // VER100 - Delphi 3    
+  // VER100 - Delphi 3
   // VER110 - C++Builder 3
-  // VER120 - Delphi 4    
+  // VER120 - Delphi 4
   // VER125 - C++Builder 4
-  // VER130 - Delphi 5    
+  // VER130 - Delphi 5
+  (*   Rendered obsolete since unit is setup for D2010 and UP only.
+
   {$IFDEF VER80}   {$DEFINE DapIoNoInt64}  {$ENDIF}
   {$IFDEF VER90}   {$DEFINE DapIoNoInt64}  {$ENDIF}
   {$IFDEF VER93}   {$DEFINE DapIoNoInt64}  {$ENDIF}
@@ -55,6 +80,8 @@ type
   {$ELSE}
   TDapIoInt64 = int64;
   {$ENDIF}
+  (**)
+
 
 const
   // Open mode constants for DapHandleOpen(. . .).
@@ -143,8 +170,8 @@ type
     iInfoSize: integer;
     hdapSysPut: TDapHandle;
     hdapSysGet: TDapHandle;
-    pszCCFileName: PChar;
-    pszCCName: PChar;
+    pszCCFileName: T_PChar;
+    pszCCName: T_PChar;
     iCCStackSize: integer;
     end;
 
@@ -170,10 +197,10 @@ type
   // Information query structure for DapHandleQueryA(. . .).
   TDapHandleQueryA = packed record
     iInfoSize: integer;         // size of this info structure
-    pszQueryKey: PChar;         // pointer to a query key string
+    pszQueryKey: T_PChar;         // pointer to a query key string
     QueryResult: packed record
       case integer of           // If the iBufferSize is 0, the queury result is a
-        0: (psz: PChar);        //  DWORD, returned in QueryResult.dw; otherwise, 
+        0: (psz: T_PChar);        //  DWORD, returned in QueryResult.dw; otherwise,
         1: (pvoid: Pointer);    //  the result is returned as a double null
         2: (dw: DWORD);         //  terminated multiple strings in a user-provided
       end;                      //  buffer QueryResult.psz points to. If eResultType
@@ -208,7 +235,7 @@ type
   TDapPipeDiskLogA = packed record
     iInfoSize: integer;                  // size of this info structure
     bmFlags: DWORD;                      // flags to DapPipeDiskLog()
-    pszFileName: PChar;                  // name buffer for log files
+    pszFileName: T_PChar;                  // name buffer for log files
     dwFileShareMode: DWORD;              // file sharing attributes
     dwOpenFlags: DWORD;                  // file opening attributes
     dwFileFlagsAttributes: DWORD;        // file flags and attributes
@@ -232,7 +259,7 @@ type
   TDapPipeDiskFeedA = packed record
     iInfoSize: integer;                  // size of this info structure
     bmFlags: DWORD;                      // flags to DapPipeDiskLog()
-    pszFileName: PChar;                  // name buffer for source file
+    pszFileName: T_PChar;                  // name buffer for source file
     dwFileShareMode: DWORD;              // file sharing attributes
     dwFileFlagsAttributes: DWORD;        // file flags and attributes    
     dwBlockSize: DWORD;                  // block size in bytes for reading
@@ -279,20 +306,20 @@ const
   dmf_OsDAPL3000          =  $00000200; // module intended for DAPL3000    
 
 // Functions supported by all Data Acquisition Processor servers.
-function DapComPipeCreateA(pszPipeInfo: PChar): Boolean; stdcall;
-function DapComPipeCreate(pszPipeInfo: PChar): Boolean; stdcall;
-function DapComPipeDeleteA(pszPipeInfo: PChar): Boolean; stdcall;
-function DapComPipeDelete(pszPipeInfo: PChar): Boolean; stdcall;
+function DapComPipeCreateA(pszPipeInfo: T_PChar): Boolean; stdcall;
+function DapComPipeCreate(pszPipeInfo: T_PChar): Boolean; stdcall;
+function DapComPipeDeleteA(pszPipeInfo: T_PChar): Boolean; stdcall;
+function DapComPipeDelete(pszPipeInfo: T_PChar): Boolean; stdcall;
 function DapHandleQueryA(hAccel: TDapHandle; var pHandleInfo: TDapHandleQueryA): Boolean; stdcall;
 function DapHandleQuery(hAccel: TDapHandle; var pHandleInfo: TDapHandleQuery): Boolean; stdcall;
-function DapHandleQueryInt32A(hAccel: TDapHandle; pszKey: PChar; var i32Result: integer): Boolean; stdcall;
-function DapHandleQueryInt32(hAccel: TDapHandle; pszKey: PChar; var i32Result: integer): Boolean; stdcall;
-function DapHandleQueryInt64A(hAccel: TDapHandle; pszKey: PChar; var i64Result: TDapIoInt64): Boolean; stdcall;
-function DapHandleQueryInt64(hAccel: TDapHandle; pszKey: PChar; var i64Result: TDapIoInt64): Boolean; stdcall;
+function DapHandleQueryInt32A(hAccel: TDapHandle; pszKey: T_PChar; var i32Result: integer): Boolean; stdcall;
+function DapHandleQueryInt32(hAccel: TDapHandle; pszKey: T_PChar; var i32Result: integer): Boolean; stdcall;
+function DapHandleQueryInt64A(hAccel: TDapHandle; pszKey: T_PChar; var i64Result: TDapIoInt64): Boolean; stdcall;
+function DapHandleQueryInt64(hAccel: TDapHandle; pszKey: T_PChar; var i64Result: TDapIoInt64): Boolean; stdcall;
 
 function DapHandleClose(hAccel: TDapHandle): Boolean; stdcall;
-function DapHandleOpenA(pszAccelName: PChar; ulOpenFlags: DWORD): TDapHandle; stdcall;
-function DapHandleOpen(pszAccelName: PChar; ulOpenFlags: DWORD): TDapHandle; stdcall;
+function DapHandleOpenA(pszAccelName: T_PChar; ulOpenFlags: DWORD): TDapHandle; stdcall;
+function DapHandleOpen(pszAccelName: T_PChar; ulOpenFlags: DWORD): TDapHandle; stdcall;
 function DapInputAvail(hAccel: TDapHandle): Integer; stdcall;
 function DapOutputSpace(hAccel: TDapHandle): Integer; stdcall;
 
@@ -300,20 +327,20 @@ function DapBufferGet(hAccel: TDapHandle; iLength: Integer; var pvBuffer): Integ
 function DapBufferGetEx(hAccel: TDapHandle; const pGetInfo: TDapBufferGetEx; var pvBuffer): Integer; stdcall;
 function DapBufferPut(hAccel: TDapHandle; iLength: Integer; const pvBuffer): Integer; stdcall;
 function DapBufferPutEx(hAccel: TDapHandle; const pPutInfo: TDapBufferPutEx; const pvBuffer): Integer; stdcall;
-function DapCharGetA(hAccel: TDapHandle; pch: PChar): Boolean; stdcall;
-function DapCharGet(hAccel: TDapHandle; pch: PChar): Boolean; stdcall;
-function DapCharPutA(hAccel: TDapHandle; ch: char): Boolean; stdcall;
-function DapCharPut(hAccel: TDapHandle; ch: char): Boolean; stdcall;
+function DapCharGetA(hAccel: TDapHandle; pch: T_PChar): Boolean; stdcall;
+function DapCharGet(hAccel: TDapHandle; pch: T_PChar): Boolean; stdcall;
+function DapCharPutA(hAccel: TDapHandle; ch: T_Char): Boolean; stdcall;
+function DapCharPut(hAccel: TDapHandle; ch: T_Char): Boolean; stdcall;
 function DapCommandDownloadA(const pdcdl: TDapCommandDownloadA): Boolean; stdcall;
 function DapCommandDownload(const pdcdl: TDapCommandDownload): Boolean; stdcall;
 
-function DapConfigA(hAccel: TDapHandle; pszDaplFilename: PChar): Boolean; stdcall;
-function DapConfig(hAccel: TDapHandle; pszDaplFilename: PChar): Boolean; stdcall;
+function DapConfigA(hAccel: TDapHandle; pszDaplFilename: T_PChar): Boolean; stdcall;
+function DapConfig(hAccel: TDapHandle; pszDaplFilename: T_PChar): Boolean; stdcall;
 function DapConfigParamsClear: Boolean; stdcall;
-function DapConfigParamSetA(iParamNumber: Integer; pszParam: PChar): Boolean; stdcall;
-function DapConfigParamSet(iParamNumber: Integer; pszParam: PChar): Boolean; stdcall;
-function DapConfigRedirectA(pszOutputFilename: PChar): Boolean; stdcall;
-function DapConfigRedirect(pszOutputFilename: PChar): Boolean; stdcall;
+function DapConfigParamSetA(iParamNumber: Integer; pszParam: T_PChar): Boolean; stdcall;
+function DapConfigParamSet(iParamNumber: Integer; pszParam: T_PChar): Boolean; stdcall;
+function DapConfigRedirectA(pszOutputFilename: T_PChar): Boolean; stdcall;
+function DapConfigRedirect(pszOutputFilename: T_PChar): Boolean; stdcall;
 function DapInputFlush(hAccel: TDapHandle): Integer; stdcall;
 function DapInputFlushEx(hAccel: TDapHandle; dwTimeOut: DWORD; dwTimeWait: DWORD; var pdwFlushed: DWORD): Boolean; stdcall;
 function DapOutputEmpty(hAccel: TDapHandle): Boolean; stdcall;
@@ -322,33 +349,33 @@ function DapInt16Get(hAccel: TDapHandle; var pi16: Smallint): Boolean; stdcall;
 function DapInt16Put(hAccel: TDapHandle; i16: Smallint): Boolean; stdcall;
 function DapInt32Get(hAccel: TDapHandle; var pi32: Longint): Boolean; stdcall;
 function DapInt32Put(hAccel: TDapHandle; i32: Longint): Boolean; stdcall;
-function DapLastErrorTextGetA(pszError: PChar; iLength: Integer): PChar; stdcall;
-function DapLastErrorTextGet(pszError: PChar; iLength: Integer): PChar; stdcall;
+function DapLastErrorTextGetA(pszError: T_PChar; iLength: Integer): T_PChar; stdcall;
+function DapLastErrorTextGet(pszError: T_PChar; iLength: Integer): T_PChar; stdcall;
 
 // DapStringFormat is not supported.
-function DapStringGetA(hAccel: TDapHandle; iLength: Integer; psz: PChar): Boolean; stdcall;
-function DapStringGet(hAccel: TDapHandle; iLength: Integer; psz: PChar): Boolean; stdcall;
-function DapStringPutA(hAccel: TDapHandle; psz: PChar): Boolean; stdcall;
-function DapStringPut(hAccel: TDapHandle; psz: PChar): Boolean; stdcall;
-function DapLineGetA(hAccel: TDapHandle; iLength: Integer; psz: PChar; dwTimeWait: DWORD): Integer; stdcall;
-function DapLineGet(hAccel: TDapHandle; iLength: Integer; psz: PChar; dwTimeWait: DWORD): Integer; stdcall;
-function DapLinePutA(hAccel: TDapHandle; psz: PChar): Integer; stdcall;
-function DapLinePut(hAccel: TDapHandle; psz: PChar): Integer; stdcall;
+function DapStringGetA(hAccel: TDapHandle; iLength: Integer; psz: T_PChar): Boolean; stdcall;
+function DapStringGet(hAccel: TDapHandle; iLength: Integer; psz: T_PChar): Boolean; stdcall;
+function DapStringPutA(hAccel: TDapHandle; psz: T_PChar): Boolean; stdcall;
+function DapStringPut(hAccel: TDapHandle; psz: T_PChar): Boolean; stdcall;
+function DapLineGetA(hAccel: TDapHandle; iLength: Integer; psz: T_PChar; dwTimeWait: DWORD): Integer; stdcall;
+function DapLineGet(hAccel: TDapHandle; iLength: Integer; psz: T_PChar; dwTimeWait: DWORD): Integer; stdcall;
+function DapLinePutA(hAccel: TDapHandle; psz: T_PChar): Integer; stdcall;
+function DapLinePut(hAccel: TDapHandle; psz: T_PChar): Integer; stdcall;
 
 procedure DapStructPrepare(var pStruct; size: integer); stdcall;
-function DapModuleInstallA(hAccel: TDapHandle; pszModPath: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
-function DapModuleInstall(hAccel: TDapHandle; pszModPath: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
-function DapModuleUninstallA(hAccel: TDapHandle; pszModName: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
-function DapModuleUninstall(hAccel: TDapHandle; pszModName: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
-function DapModuleLoadA(hAccel: TDapHandle; pszModPath: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
-function DapModuleLoad(hAccel: TDapHandle; pszModPath: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
-function DapModuleUnloadA(hAccel: TDapHandle; pszModName: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
-function DapModuleUnload(hAccel: TDapHandle; pszModName: PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleInstallA(hAccel: TDapHandle; pszModPath: T_PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleInstall(hAccel: TDapHandle; pszModPath: T_PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleUninstallA(hAccel: TDapHandle; pszModName: T_PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleUninstall(hAccel: TDapHandle; pszModName: T_PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleLoadA(hAccel: TDapHandle; pszModPath: T_PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleLoad(hAccel: TDapHandle; pszModPath: T_PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleUnloadA(hAccel: TDapHandle; pszModName: T_PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
+function DapModuleUnload(hAccel: TDapHandle; pszModName: T_PChar; bmFlags: DWORD; var pDapList): Boolean; stdcall;
 function DapReinitialize(hAccel: TDapHandle): Boolean; stdcall;
 function DapReset(hAccel: TDapHandle): Boolean; stdcall;
 function DapBufferPeek(hAccel: TDapHandle; var pPeekInfo: TDapBufferPeek): Boolean; stdcall;
-function DapServerControlA(pszServer: PChar; pszKey: PChar): Boolean; stdcall;
-function DapServerControl(pszServer: PChar; pszKey: PChar): Boolean; stdcall;
+function DapServerControlA(pszServer: T_PChar; pszKey: T_PChar): Boolean; stdcall;
+function DapServerControl(pszServer: T_PChar; pszKey: T_PChar): Boolean; stdcall;
 
 // Functions only supported by DAPcell and DAPcell Local servers.
 function DapPipeDiskLogA(hAccel: TDapHandle; var pLogInfo: TDapPipeDiskLogA; var pGetInfo: TDapBufferGetEx): Boolean; stdcall;
@@ -439,7 +466,7 @@ function DapPipeDiskFeed;   external DapioDll name 'DapPipeDiskFeedA';
 
 function DapLastErrorGet: string;
 var
-  acError: array [0..1023] of Char;
+  acError: array [0..1023] of T_Char;
 begin
   DapLastErrorTextGet(acError, SizeOf(acError));
   Result := StrPas(acError);

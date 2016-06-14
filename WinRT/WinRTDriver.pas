@@ -3,13 +3,13 @@
 //
 //  Implementation of WinRT functionality provided outside the WinRT preprocessor.
 //
-{$ifndef Package_Build}
-{$ifdef systest}
-  {$I ..\Conditionals.inc}
-{$else}
-  {$I Conditionals.inc}
-{$endif}
-{$endif}
+{_ifndef Package_Build}
+{_ifdef systest}
+  {_I ..\Conditionals.inc}
+{_else}
+  {_I Conditionals.inc}
+{_endif}
+{_endif}
 unit WinRTDriver;
 
 interface
@@ -20,7 +20,7 @@ uses
 
 type
 
-  {$IFDEF DELPHIXE}
+  {$IFDEF WIN32}
   // for 32-Bit Windows specify ANSI related types...
   TPChar = PANSIChar;
   TChar = ANSIChar;
@@ -181,11 +181,11 @@ const
     sh      : array[boolean] of integer = (0, FILE_SHARE_READ or FILE_SHARE_WRITE);
 var
     DeviceName  : array[0..31] of TChar;
-    {$IFDEF DELPHIXE}
+    {$IFDEF WIN32}
     TmpStr : String; // This is needed to help in the conversion from WideString to PWideChar
     {$ENDIF}
 begin
-    {$IFDEF DELPHIXE}
+    {$IFDEF WIN32}
     TmpStr := format('\\.\WRTdev%d',[DeviceNumber]);
     Result := CreateFile(PWideChar(TmpStr), 0,
                          sh[sharing], nil, OPEN_EXISTING, 0, 0);
