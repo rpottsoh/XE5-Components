@@ -1,10 +1,10 @@
-{$ifndef Package_Build}
+(*{$ifndef Package_Build}
 {$ifdef systest}
   {$I ..\Conditionals.inc}
 {$else}
   {$I Conditionals.inc}
 {$endif}
-{$endif}
+{$endif}(**)
 unit DAP_Inspector;
 
 interface
