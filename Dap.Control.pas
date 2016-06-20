@@ -16,6 +16,8 @@ type
     FMaxADCount : integer;
     [Inject(CMinADCount)]
     FMinADCount : integer;
+    function GetDapName: string;
+    procedure SetDapName(aValue: string);
     procedure SetOnNewBinaryData(aValue: TDAPNewBinaryData);
     function GetOnNewBinaryData: TDapNewBinaryData;
     procedure SetOnNewTextData(aValue: TDAPNewTextData);
@@ -40,6 +42,7 @@ type
     procedure SendStringToDAP(aString : string);
     procedure SendCCFileToDAP(aFilename : string);
     procedure SendDaplFileToDap(aFilename: string);
+    property DapName: string read GetDapName write SetDapName;
     property OnNewBinaryData : TDAPNewBinaryData read GetOnNewBinaryData write SetOnNewBinaryData;
     property OnNewTextData : TDAPNewTextData read GetOnNewTextData write SetOnNewTextData;
   end;
@@ -763,6 +766,16 @@ end;
 function TDapControl.GetOnNewBinaryData: TDapNewBinaryData;
 begin
   result := FDapInterface.OnNewBinaryData;
+end;
+
+function TDapControl.GetDapName: string;
+begin
+  result := FDapInterface.DapName;
+end;
+
+procedure TDapControl.SetDapName(aValue: string);
+begin
+  FDapInterface.DapName := aValue;
 end;
 
 procedure TDapInterface.SetOnNewTextData(aValue: TDapNewTextData);

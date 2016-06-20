@@ -122,6 +122,8 @@ type
 {$region 'IDapControl'}
   IDapControl = interface(IInvokable)
   ['{6453D13D-6E97-41DD-9AC9-7F60EFE28E60}']
+    function GetDapName: string;
+    procedure SetDapName(aValue: string);
     function MaxAdCount : integer;
     function MinAdCount : integer;
     function CheckInRange(aADValue : integer): integer;
@@ -144,6 +146,7 @@ type
     procedure SendStringToDAP(aString : string);
     procedure SendCCFileToDAP(aFilename : string);
     procedure SendDaplFileToDap(aFilename: string);
+    property DapName: string read GetDapName write SetDapName;
     property OnNewBinaryData : TDAPNewBinaryData read GetOnNewBinaryData write SetOnNewBinaryData;
     property OnNewTextData : TDAPNewTextData read GetOnNewTextData write SetOnNewTextData;
   end;
