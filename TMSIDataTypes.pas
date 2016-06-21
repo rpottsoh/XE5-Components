@@ -62,8 +62,9 @@ const
        siMomentftlbNm  : extended =  1.35582;  {ftlbs per Nm}
        FTLBStoKGM      : extended =  0.13814159258; {kgm / ft-lbs}
        siMass          : extended = 28.349523028;   { g    /oz.   }
-       siDistance      : extended =  25.4;       { mm   /in.   }
+       siDistance      : extended = 25.4;       { mm   /in.   }
        siDistanceCM    : extended =  2.54;       { cm   /in.   }
+       siDistanceM     : extended =  0.0254;     {  m   /in.   }
        siSpeed         : extended =  1.609344;      { km/h /mph   }
        siPressure      : extended =  6.89475728;      {kPa / PSI    }
        siPressureKGCM2 : extended =  0.07032349;  {kg/cm2 divided by siPressureKGCM2 equals PSI}
@@ -77,8 +78,8 @@ const
        BarToPSI        : extended = 14.503773801;   // 1 Bar = 14.503774 PSI
        PSItoBar        : extended =  0.068947573; // 1 PSI = 0.0689... Bar
        GPMtoLPM        : extended =  3.7854118; //Liters/Minute per Gallons/Minute
-       CM3pSECtoLPM    : extended = 0.06; // cm^3/sec per Liters/Minute
-       IN3pSECtoLPM    : extended = 0.983223854; // in^3/sec per Liters/Minute
+       CM3pSECtoLPM    : extended =  0.06; // cm^3/sec per Liters/Minute
+       IN3pSECtoLPM    : extended =  0.983223854; // in^3/sec per Liters/Minute
 
        CR_LF = #13+#10;
        _tab = #9;
