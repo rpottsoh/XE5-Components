@@ -12,6 +12,12 @@ interface
 uses Windows, Messages, SysUtils, Classes, DAPIO32_TMSI;
 
 type
+
+  E_LocalServerNotActive = class(Exception);
+  E_LocalDAPNotActive    = class(Exception);
+  E_ccFileNotFound       = class(Exception);
+  E_CannotLoadCCModule   = class(Exception);
+
   TQueryError = procedure(Sender : TObject; ErrorMsg : String) of Object;
   TDapMemFreeEvent = procedure(Sender : TObject; MemFree : DWord) of Object;
 
@@ -1036,6 +1042,11 @@ begin
     DAP_Handel := Local_DAPFound;
     Result := DAP_Handel > 0;
     DapHandleClose(DAP_Handel);
+    if Not Result then
+    begin
+      if Assigned(FQueryError) then
+        FQueryError(Self,DapLastErrorGet);
+    end;
   end
   else
   begin
