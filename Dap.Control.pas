@@ -1,7 +1,7 @@
 unit Dap.Control;
 
 interface
-uses DAPLib_TLB, Dap.Interfaces, Spring.Container, Spring.Container.Common, Spring.Services;
+uses DAPLib_TLB, Dap.Interfaces, Spring.Container, Spring.Container.Common;
 const
       CMaxADCount = 32767;
       CMinADCount = -32768;
