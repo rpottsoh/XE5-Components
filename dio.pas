@@ -538,7 +538,11 @@ begin
     end; {case}
     bitindex := ((bitnum -1) mod 8) + offset;
     if bitindex <> -1 then
+  {$ifdef PCI_DIG_IO}
+      result := cbDBitOut(board_num,FIRSTPORTA,BitIndex,0)
+  {$else}
       result := cbDBitOut(board_num,OutputPorts[Board_Num,IOIndex],BitIndex,0)
+  {$endif}
     else
       result := bitindex;
   end
@@ -607,7 +611,11 @@ begin
     end; {case}
     bitindex := ((bitnum -1) mod 8) + offset;
     if bitindex <> -1 then
+  {$ifdef PCI_DIG_IO}
+      result := cbDBitOut(board_num,FIRSTPORTA,BitIndex,1)
+  {$else}
       result := cbDBitOut(board_num,OutputPorts[Board_Num,IOIndex],BitIndex,1)
+  {$endif}
     else
       result := bitindex;
   end
