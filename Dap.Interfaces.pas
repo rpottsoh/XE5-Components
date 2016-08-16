@@ -123,6 +123,9 @@ type
 {$region 'IDapControl'}
   IDapControl = interface(IInvokable)
   ['{6453D13D-6E97-41DD-9AC9-7F60EFE28E60}']
+    procedure AddLongDapVar(aVarName: string);
+    function IsLongDapVar(aVarName: string): Boolean;
+    procedure ClearLongDapVarList;
     function GetDapName: string;
     procedure SetDapName(aValue: string);
     function MaxAdCountLong : longint;

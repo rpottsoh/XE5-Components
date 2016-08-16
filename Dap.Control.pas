@@ -1,7 +1,7 @@
 unit Dap.Control;
 
 interface
-uses DAPLib_TLB, Dap.Interfaces, Spring.Container, Spring.Container.Common;
+uses DAPLib_TLB, Dap.Interfaces, Spring.Collections, Spring.Container, Spring.Container.Common;
 const
       CMaxADCount     = 32767;
       CMinADCount     = -32768;
@@ -22,6 +22,7 @@ type
     FMaxADCountLong : longint;
     [Inject(CMinADCountLong)]
     FMinADCountLong : longint;
+    FLongDapVarsList: IList<string>;
     function GetDapName: string;
     procedure SetDapName(aValue: string);
     procedure SetOnNewBinaryData(aValue: TDAPNewBinaryData);
@@ -53,6 +54,9 @@ type
     procedure SendStringToDAP(aString : string);
     procedure SendCCFileToDAP(aFilename : string);
     procedure SendDaplFileToDap(aFilename: string);
+    procedure AddLongDapVar(aVarName: string);
+    function IsLongDapVar(aVarName: string): Boolean;
+    procedure ClearLongDapVarList;
     property DapName: string read GetDapName write SetDapName;
     property OnNewBinaryData : TDAPNewBinaryData read GetOnNewBinaryData write SetOnNewBinaryData;
     property OnNewTextData : TDAPNewTextData read GetOnNewTextData write SetOnNewTextData;
@@ -676,8 +680,13 @@ end;
 procedure TDapControl.Set_Dap_Var(DapVar : string; Value : integer);
 var lValue : integer;
 begin
-  lValue := CheckInRange(Value);
-  Send_DAPL_Command(format('let %s=%d',[DapVar, lValue]));
+  if IsLongDapVar(DapVar) then
+    Set_Dap_LVar(DapVar, Value)
+  else
+  begin
+    lValue := CheckInRange(Value);
+    Send_DAPL_Command(format('let %s=%d',[DapVar, lValue]));
+  end;
 end;
 
 function TDapControl.Get_Dap_Var(DapVar : string): string;
@@ -783,6 +792,21 @@ begin
   FDapInterface.DaplFile := aFilename;
 end;
 
+procedure TDapControl.AddLongDapVar(aVarName: string);
+begin
+  FLongDapVarsList.Add(aVarName.ToUpper);
+end;
+
+function TDapControl.IsLongDapVar(aVarName: string): Boolean;
+begin
+  result := FLongDapVarsList.Contains(aVarName.ToUpper);
+end;
+
+procedure TDapControl.ClearLongDapVarList;
+begin
+  FLongDapVarsList.Clear
+end;
+
 procedure TDapInterface.SetOnNewBinaryData(aValue: TDapNewBinaryData);
 begin
   if assigned(FDap) then
@@ -855,6 +879,7 @@ begin
   FMinADCount := aMinADCount;
   FMaxADCountLong := aMaxLongADCount;
   FMinADCountLong := aMinLongADCount;
+  FLongDapVarsList := TCollections.CreateList<string>;
 end;
 
 {$endregion}
