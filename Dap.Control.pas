@@ -23,6 +23,7 @@ type
     [Inject(CMinADCountLong)]
     FMinADCountLong : longint;
     FLongDapVarsList: IList<string>;
+    FLastValueSent: string;
     function GetDapName: string;
     procedure SetDapName(aValue: string);
     procedure SetOnNewBinaryData(aValue: TDAPNewBinaryData);
@@ -674,6 +675,7 @@ procedure TDapControl.Set_Dap_LVar(DapVar : string; Value : longint);
 var lValue : longint;
 begin
   lValue := CheckInRangeLong(Value);
+  FLastValueSent := lValue.ToString;
   Send_DAPL_Command(format('let %s=%d',[DapVar, lValue]));
 end;
 
@@ -685,6 +687,7 @@ begin
   else
   begin
     lValue := CheckInRange(Value);
+    FLastValueSent := lValue.ToString;
     Send_DAPL_Command(format('let %s=%d',[DapVar, lValue]));
   end;
 end;
@@ -692,7 +695,10 @@ end;
 function TDapControl.Get_Dap_Var(DapVar : string): string;
 begin
   Send_DAPL_Command(format('SDisplay %s',[DapVar]));
-  result := FDapInterface.stringdata;
+  if FDapInterface.GetOCXCreated then
+    result := FDapInterface.stringdata
+  else
+    result := FLastValueSent;
 end;
 
 function TDapControl.Flush_DAP: boolean;
@@ -794,12 +800,16 @@ end;
 
 procedure TDapControl.AddLongDapVar(aVarName: string);
 begin
+  if not assigned(FLongDapVarsList) then
+    FLongDapVarsList := TCollections.CreateList<string>;
   FLongDapVarsList.Add(aVarName.ToUpper);
 end;
 
 function TDapControl.IsLongDapVar(aVarName: string): Boolean;
 begin
-  result := FLongDapVarsList.Contains(aVarName.ToUpper);
+  result := false;
+  if assigned(FLongDapVarsList) then
+    result := FLongDapVarsList.Contains(aVarName.ToUpper);
 end;
 
 procedure TDapControl.ClearLongDapVarList;
@@ -879,7 +889,6 @@ begin
   FMinADCount := aMinADCount;
   FMaxADCountLong := aMaxLongADCount;
   FMinADCountLong := aMinLongADCount;
-  FLongDapVarsList := TCollections.CreateList<string>;
 end;
 
 {$endregion}
