@@ -3,8 +3,10 @@ unit Dap.Control;
 interface
 uses DAPLib_TLB, Dap.Interfaces, Spring.Container, Spring.Container.Common;
 const
-      CMaxADCount = 32767;
-      CMinADCount = -32768;
+      CMaxADCount     = 32767;
+      CMinADCount     = -32768;
+      CMaxADCountLong = 2147483647;
+      CMinADCountLong = -2147483648;
 
 type
 
@@ -16,6 +18,10 @@ type
     FMaxADCount : integer;
     [Inject(CMinADCount)]
     FMinADCount : integer;
+    [Inject(CMaxADCountLong)]
+    FMaxADCountLong : longint;
+    [Inject(CMinADCountLong)]
+    FMinADCountLong : longint;
     function GetDapName: string;
     procedure SetDapName(aValue: string);
     procedure SetOnNewBinaryData(aValue: TDAPNewBinaryData);
@@ -23,7 +29,10 @@ type
     procedure SetOnNewTextData(aValue: TDAPNewTextData);
     function GetOnNewTextData: TDapNewTextData;
   public
-    constructor Create(aDap : IDapInterface; aMaxADCount : integer; aMinADCount : integer);
+    constructor Create(aDap : IDapInterface; aMaxADCount : integer;
+      aMinADCount : integer; aMaxLongADCount: longint; aMinLongADCount: longint);
+    function MaxAdCountLong : longint;
+    function MinAdCountLong : longint;
     function MaxAdCount : integer;
     function MinAdCount : integer;
     function GetDAPData(aLength: integer; var aBuffer : smallint): integer;
@@ -32,9 +41,11 @@ type
     function Flush_DAP: boolean;
     function DapPresent: boolean;
     function Get_Dap_Var(DapVar : string): string;
+    procedure Set_Dap_LVar(DapVar : string; Value : longint);
     procedure Set_Dap_Var(DapVar : string; Value : integer);
     procedure Send_DAPL_Command(aCommand : string);
     procedure ReleaseDAP;
+    function CheckInRangeLong(aADValue: longint): longint;
     function CheckInRange(aADValue: integer): integer;
     function ConvertDtoA(aDigitalVal : integer; aAtoDRange : double): double;
     function ConvertAToD(aFloatVal : double; aAtoDRange : double): integer;
@@ -630,6 +641,16 @@ end;
 
 {$REGION 'TDapControl'}
 
+function TDapControl.CheckInRangeLong(aADValue: longint): longint;
+begin
+  result := aADValue;
+  if result > MaxAdCountLong then
+    result := MaxAdCountLong
+  else
+  if result < MinAdCountLong then
+    result := MinAdCountLong;
+end;
+
 function TDapControl.CheckInRange(aADValue: integer): integer;
 begin
   result := aADValue;
@@ -643,6 +664,13 @@ end;
 procedure TDapControl.Send_DAPL_Command(aCommand : string);
 begin
   FDapInterface.StringData := aCommand;
+end;
+
+procedure TDapControl.Set_Dap_LVar(DapVar : string; Value : longint);
+var lValue : longint;
+begin
+  lValue := CheckInRangeLong(Value);
+  Send_DAPL_Command(format('let %s=%d',[DapVar, lValue]));
 end;
 
 procedure TDapControl.Set_Dap_Var(DapVar : string; Value : integer);
@@ -689,6 +717,16 @@ end;
 function TDapControl.GetDAPData(aLength: integer; var aBuffer : smallint): integer;
 begin
   result := FDapInterface.Int16BufferGet(aLength, aBuffer);
+end;
+
+function TDapControl.MaxAdCountLong : longint;
+begin
+  result := FMaxAdCountLong;
+end;
+
+function TDapControl.MinAdCountLong : longint;
+begin
+  result := FMinAdCountLong;
 end;
 
 function TDapControl.MaxAdCount : integer;
@@ -808,12 +846,15 @@ begin
   FDapInterface.ReleaseDap;
 end;
 
-constructor TDapControl.Create(aDap: IDapInterface; aMaxADCount : integer; aMinADCount : integer);
+constructor TDapControl.Create(aDap: IDapInterface; aMaxADCount : integer;
+  aMinADCount : integer; aMaxLongADCount: longint; aMinLongADCount: longint);
 begin
   inherited create;
   FDapInterface := aDap;
   FMaxADCount := aMaxADCount;
   FMinADCount := aMinADCount;
+  FMaxADCountLong := aMaxLongADCount;
+  FMinADCountLong := aMinLongADCount;
 end;
 
 {$endregion}

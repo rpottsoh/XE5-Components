@@ -119,13 +119,17 @@ type
   end;
 {$endregion}
 
+
 {$region 'IDapControl'}
   IDapControl = interface(IInvokable)
   ['{6453D13D-6E97-41DD-9AC9-7F60EFE28E60}']
     function GetDapName: string;
     procedure SetDapName(aValue: string);
+    function MaxAdCountLong : longint;
+    function MinAdCountLong : longint;
     function MaxAdCount : integer;
     function MinAdCount : integer;
+    function CheckInRangeLong(aADValue: longint): longint;
     function CheckInRange(aADValue : integer): integer;
     function Stop_DAP: boolean;
     function Reset_DAP: boolean;
@@ -134,6 +138,7 @@ type
     function GetDAPData(aLength: integer; var aBuffer : smallint): integer;
     function Get_Dap_Var(DapVar : string): string;
     procedure Set_Dap_Var(DapVar : string; Value : integer);
+    procedure Set_Dap_LVar(DapVar : string; Value : longint);
     procedure Send_DAPL_Command(aCommand : string);
     procedure SetOnNewBinaryData(aValue: TDAPNewBinaryData);
     function GetOnNewBinaryData: TDapNewBinaryData;
