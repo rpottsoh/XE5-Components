@@ -22,6 +22,7 @@ type
     FMaxADCountLong : longint;
     [Inject(CMinADCountLong)]
     FMinADCountLong : longint;
+    [Inject]
     FLongDapVarsList: IList<string>;
     FLastValueSent: string;
     function GetDapName: string;
@@ -43,12 +44,11 @@ type
     function Flush_DAP: boolean;
     function DapPresent: boolean;
     function Get_Dap_Var(DapVar : string): string;
-    procedure Set_Dap_LVar(DapVar : string; Value : longint);
-    procedure Set_Dap_Var(DapVar : string; Value : integer);
+    procedure Set_Dap_Var(DapVar : string; Value : int64);
     procedure Send_DAPL_Command(aCommand : string);
     procedure ReleaseDAP;
-    function CheckInRangeLong(aADValue: longint): longint;
-    function CheckInRange(aADValue: integer): integer;
+    function CheckInRangeLong(aADValue: int64): longint;
+    function CheckInRange(aADValue: int64): integer;
     function ConvertDtoA(aDigitalVal : integer; aAtoDRange : double): double;
     function ConvertAToD(aFloatVal : double; aAtoDRange : double): integer;
     procedure ConvertAToDandSend(aFloatVal : double; aAtoDRange : double; aDapVarName : string);
@@ -646,7 +646,7 @@ end;
 
 {$REGION 'TDapControl'}
 
-function TDapControl.CheckInRangeLong(aADValue: longint): longint;
+function TDapControl.CheckInRangeLong(aADValue: int64): longint;
 begin
   result := aADValue;
   if result > MaxAdCountLong then
@@ -656,7 +656,7 @@ begin
     result := MinAdCountLong;
 end;
 
-function TDapControl.CheckInRange(aADValue: integer): integer;
+function TDapControl.CheckInRange(aADValue: int64): integer;
 begin
   result := aADValue;
   if result > MaxAdCount then
@@ -671,25 +671,15 @@ begin
   FDapInterface.StringData := aCommand;
 end;
 
-procedure TDapControl.Set_Dap_LVar(DapVar : string; Value : longint);
-var lValue : longint;
-begin
-  lValue := CheckInRangeLong(Value);
-  FLastValueSent := lValue.ToString;
-  Send_DAPL_Command(format('let %s=%d',[DapVar, lValue]));
-end;
-
-procedure TDapControl.Set_Dap_Var(DapVar : string; Value : integer);
-var lValue : integer;
+procedure TDapControl.Set_Dap_Var(DapVar : string; Value : int64);
+var lValue : int64;
 begin
   if IsLongDapVar(DapVar) then
-    Set_Dap_LVar(DapVar, Value)
+    lValue := CheckInRangeLong(Value)
   else
-  begin
     lValue := CheckInRange(Value);
-    FLastValueSent := lValue.ToString;
-    Send_DAPL_Command(format('let %s=%d',[DapVar, lValue]));
-  end;
+  FLastValueSent := lValue.ToString;
+  Send_DAPL_Command(format('let %s=%d',[DapVar, lValue]));
 end;
 
 function TDapControl.Get_Dap_Var(DapVar : string): string;
@@ -895,6 +885,13 @@ end;
 
 procedure RegisterDapControl(aUseHardware : boolean=true);
 begin
+  GlobalContainer.RegisterType<IList<string>.Implements<IList>.DelegateTo
+    (
+    function: IList<string>
+    begin
+      result := TCollections.CreateList<string>;
+    end
+    );
   GlobalContainer.RegisterType<TDapControl>.Implements<IDapControl>;
   GlobalContainer.RegisterType<TDapInterface>.Implements<IDapInterface>.DelegateTo
     (
