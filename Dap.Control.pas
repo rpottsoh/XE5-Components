@@ -32,8 +32,8 @@ type
     procedure SetOnNewTextData(aValue: TDAPNewTextData);
     function GetOnNewTextData: TDapNewTextData;
   public
-    constructor Create(aDap : IDapInterface; aMaxADCount : integer;
-      aMinADCount : integer; aMaxLongADCount: longint; aMinLongADCount: longint);
+    constructor Create(aDap: IDapInterface; aMaxADCount : integer = CMaxADCount;
+      aMinADCount : integer = CMinADCount; aMaxLongADCount: longint = CMaxADCountLong; aMinLongADCount: longint = CMinADCountLong);
     function MaxAdCountLong : longint;
     function MinAdCountLong : longint;
     function MaxAdCount : integer;
@@ -790,16 +790,12 @@ end;
 
 procedure TDapControl.AddLongDapVar(aVarName: string);
 begin
-  if not assigned(FLongDapVarsList) then
-    FLongDapVarsList := TCollections.CreateList<string>;
   FLongDapVarsList.Add(aVarName.ToUpper);
 end;
 
 function TDapControl.IsLongDapVar(aVarName: string): Boolean;
 begin
-  result := false;
-  if assigned(FLongDapVarsList) then
-    result := FLongDapVarsList.Contains(aVarName.ToUpper);
+  result := FLongDapVarsList.Contains(aVarName.ToUpper);
 end;
 
 procedure TDapControl.ClearLongDapVarList;
@@ -870,8 +866,8 @@ begin
   FDapInterface.ReleaseDap;
 end;
 
-constructor TDapControl.Create(aDap: IDapInterface; aMaxADCount : integer;
-  aMinADCount : integer; aMaxLongADCount: longint; aMinLongADCount: longint);
+constructor TDapControl.Create(aDap: IDapInterface; aMaxADCount : integer = CMaxADCount;
+  aMinADCount : integer = CMinADCount; aMaxLongADCount: longint = CMaxADCountLong; aMinLongADCount: longint = CMinADCountLong);
 begin
   inherited create;
   FDapInterface := aDap;
@@ -879,13 +875,14 @@ begin
   FMinADCount := aMinADCount;
   FMaxADCountLong := aMaxLongADCount;
   FMinADCountLong := aMinLongADCount;
+  FLongDapVarsList := TCollections.CreateList<string>;
 end;
 
 {$endregion}
 
 procedure RegisterDapControl(aUseHardware : boolean=true);
 begin
-  GlobalContainer.RegisterType<IList<string>.Implements<IList>.DelegateTo
+  GlobalContainer.RegisterType<IList<string>>.DelegateTo
     (
     function: IList<string>
     begin
