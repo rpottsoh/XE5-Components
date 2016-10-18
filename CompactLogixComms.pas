@@ -188,10 +188,15 @@ Type
    property InputData;
  end; // TAnalogInputModule
 
- TAnalogOutputModule = Class(TAnalogCommModule) // 1769-OF8V/A Analog Input Module
+ TAnalogOutput4Module = Class(TAnalogCommModule) // 1769-OF4V/A 4 Channel Analog Output Module
  public
    property OutputData;
- end; // TAnalogInputModule
+ end; // TAnalogOutput4Module
+
+ TAnalogOutputModule = Class(TAnalogCommModule) // 1769-OF8V/A 8 Channel Analog Output Module
+ public
+   property OutputData;
+ end; // TAnalogOutputModule
 
  TDigitalInputModule = Class(TDigitalCommModule) // 1769-IQ16/A
  public
@@ -1061,6 +1066,8 @@ begin
         FModuleType[i] := 6;
       if (FModules[i] is TAnalogOutputModule_IV) then
         FModuleType[i] := 7;
+      if (FModules[i] is TAnalogOutput4Module) then
+        FModuleType[i] := 8;
     end
     else
     begin
@@ -1990,7 +1997,8 @@ var
   INIFile : TStRegINI;
   i : integer;
   lAnalogInputModule : TAnalogInputModule;
-  lAnalogOutputModule : TAnalogOutputModule;
+  lAnalogOutput4Module : TAnalogOutput4Module;
+  lAnalogOutput8Module : TAnalogOutputModule;
   lDigitalInputModule : TDigitalInputModule;
   lDigitalOutputModule : TDigitalOutputModule;
   lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
@@ -2046,14 +2054,14 @@ begin
                   lAnalogInputModule.ModuleArrayElements[1] := ReadInteger('EndElement',0);
                   Modules[i] := lAnalogInputModule;
                 end; // 0
-            1 : begin // Analog Output Module
-                  lAnalogOutputModule := TAnalogOutputModule.Create;
-                  lAnalogOutputModule.ModuleType := ReadInteger('ModuleType',0);
-                  lAnalogOutputModule.ModuleNumber := ReadInteger('ModuleNumber',0);
-                  lAnalogOutputModule.ModuleString := ReadString('ModuleString','');
-                  lAnalogOutputModule.ModuleArrayElements[0] := ReadInteger('StartElement',0);
-                  lAnalogOutputModule.ModuleArrayElements[1] := ReadInteger('EndElement',0);
-                  Modules[i] := lAnalogOutputModule;
+            1 : begin // 8 Channel Analog Output Module
+                  lAnalogOutput8Module := TAnalogOutputModule.Create;
+                  lAnalogOutput8Module.ModuleType := ReadInteger('ModuleType',0);
+                  lAnalogOutput8Module.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  lAnalogOutput8Module.ModuleString := ReadString('ModuleString','');
+                  lAnalogOutput8Module.ModuleArrayElements[0] := ReadInteger('StartElement',0);
+                  lAnalogOutput8Module.ModuleArrayElements[1] := ReadInteger('EndElement',0);
+                  Modules[i] := lAnalogOutput8Module;
                 end; // 1
             2 : begin // Digital Input Module
                   lDigitalInputModule := TDigitalInputModule.Create;
@@ -2109,6 +2117,15 @@ begin
                   lAnalogOutputModule_IV.ModuleArrayElements[1] := ReadInteger('EndElement',0);
                   Modules[i] := lAnalogOutputModule_IV;
                 end; // 7
+            8 : begin // 4 Channel Analog Output Module
+                  lAnalogOutput4Module := TAnalogOutput4Module.Create;
+                  lAnalogOutput4Module.ModuleType := ReadInteger('ModuleType',0);
+                  lAnalogOutput4Module.ModuleNumber := ReadInteger('ModuleNumber',0);
+                  lAnalogOutput4Module.ModuleString := ReadString('ModuleString','');
+                  lAnalogOutput4Module.ModuleArrayElements[0] := ReadInteger('StartElement',0);
+                  lAnalogOutput4Module.ModuleArrayElements[1] := ReadInteger('EndElement',0);
+                  Modules[i] := lAnalogOutput4Module;
+                end; // 1
           end; // Case
         end; // For i
         if Assigned(FPLCReadThread) then
@@ -2139,7 +2156,8 @@ var
   j : Integer;
   k : Integer;
   lAnalogInputModule : TAnalogInputModule;
-  lAnalogOutputModule : TAnalogOutputModule;
+  lAnalogOutput4Module : TAnalogOutput4Module;
+  lAnalogOutput8Module : TAnalogOutputModule;
   lDigitalInputModule : TDigitalInputModule;
   lDigitalOutputModule : TDigitalOutputModule;
   lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
@@ -2186,9 +2204,9 @@ begin
                 end; // For k
               end; // With
             end; // 0
-        1 : begin // Analog Output Module
-              lAnalogOutputModule := Modules[i] as TAnalogOutputModule;
-              with lAnalogOutputModule do
+        1 : begin // 8 Channel Analog Output Module
+              lAnalogOutput8Module := Modules[i] as TAnalogOutputModule;
+              with lAnalogOutput8Module do
               begin
                 for j := ModuleArrayElements[0] to (ModuleArrayElements[1] - 1) do
                 begin
@@ -2341,6 +2359,29 @@ begin
                   Fault[k] := (FPLCRead.LongVal[ModuleArrayElements[1]] SHR k and 1) = 1;
               end; // With
             end; // 7
+        8 : begin // 4 Channel Analog Output Module
+              lAnalogOutput4Module := Modules[i] as TAnalogOutput4Module;
+              with lAnalogOutput4Module do
+              begin
+                for j := ModuleArrayElements[0] to (ModuleArrayElements[1] - 1) do
+                begin
+                  OutputData[j - ModuleArrayElements[0]] := FPLCRead.LongVal[j];
+                end; // For j
+                for k := 0 to 31 do
+                  Fault[k] := (FPLCRead.LongVal[ModuleArrayElements[1]] SHR k and 1) = 1;
+                for k := 0 to 31 do
+                begin
+                  if k in [0,8,16,24] then
+                  begin
+                    OverRange[lChannel] := Fault[k];
+                    UnderRange[lChannel] := Fault[k + 1];
+                    HighAlarm[lChannel] := Fault[k + 2];
+                    LowAlarm[lChannel] := Fault[k + 3];
+                    inc(lChannel);
+                  end; // If
+                end; // For k
+              end; // With
+            end; // 8
       end; // Case
     end; // For i
     if Not Terminated then
@@ -2353,7 +2394,8 @@ var
   INIFile : TStRegINI;
   i : integer;
   lAnalogInputModule : TAnalogInputModule;
-  lAnalogOutputModule : TAnalogOutputModule;
+  lAnalogOutput4Module : TAnalogOutput4Module;
+  lAnalogOutput8Module : TAnalogOutputModule;
   lDigitalInputModule : TDigitalInputModule;
   lDigitalOutputModule : TDigitalOutputModule;
   lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
@@ -2399,13 +2441,13 @@ begin
                       WriteInteger('StartElement',lAnalogInputModule.ModuleArrayElements[0]);
                       WriteInteger('EndElement',lAnalogInputModule.ModuleArrayElements[1]);
                     end; // 0
-                1 : begin // Analog Output Module
-                      lAnalogOutputModule := Modules[i] as TAnalogOutputModule;
-                      WriteInteger('ModuleType',lAnalogOutputModule.ModuleType);
-                      WriteInteger('ModuleNumber',lAnalogOutputModule.ModuleNumber);
-                      WriteString('ModuleString',lAnalogOutputModule.ModuleString);
-                      WriteInteger('StartElement',lAnalogOutputModule.ModuleArrayElements[0]);
-                      WriteInteger('EndElement',lAnalogOutputModule.ModuleArrayElements[1]);
+                1 : begin // 8 Channel Analog Output Module
+                      lAnalogOutput8Module := Modules[i] as TAnalogOutputModule;
+                      WriteInteger('ModuleType',lAnalogOutput8Module.ModuleType);
+                      WriteInteger('ModuleNumber',lAnalogOutput8Module.ModuleNumber);
+                      WriteString('ModuleString',lAnalogOutput8Module.ModuleString);
+                      WriteInteger('StartElement',lAnalogOutput8Module.ModuleArrayElements[0]);
+                      WriteInteger('EndElement',lAnalogOutput8Module.ModuleArrayElements[1]);
                     end; // 1
                 2 : begin // Digital Input Module
                       lDigitalInputModule := Modules[i] as TDigitalInputModule;
@@ -2455,6 +2497,14 @@ begin
                       WriteInteger('StartElement',lAnalogOutputModule_IV.ModuleArrayElements[0]);
                       WriteInteger('EndElement',lAnalogOutputModule_IV.ModuleArrayElements[1]);
                     end; // 7
+                8 : begin // 4 Channel Analog Output Module
+                      lAnalogOutput4Module := Modules[i] as TAnalogOutput4Module;
+                      WriteInteger('ModuleType',lAnalogOutput4Module.ModuleType);
+                      WriteInteger('ModuleNumber',lAnalogOutput4Module.ModuleNumber);
+                      WriteString('ModuleString',lAnalogOutput4Module.ModuleString);
+                      WriteInteger('StartElement',lAnalogOutput4Module.ModuleArrayElements[0]);
+                      WriteInteger('EndElement',lAnalogOutput4Module.ModuleArrayElements[1]);
+                    end;
               end; // Case
               Modules[i].Free;
               Modules[i] := nil;
@@ -2940,7 +2990,8 @@ var
   lDigitalInputModule : TDigitalInputModule;
   lDigitalOutputModule : TDigitalOutputModule;
   lAnalogInputModule : TAnalogInputModule;
-  lAnalogOutputModule : TAnalogOutputModule;
+  lAnalogOutput4Module : TAnalogOutput4Module;
+  lAnalogOutput8Module : TAnalogOutputModule;
   lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
   lDriveModule : TDriveModule;
   StrErrorMessages : String;
@@ -2959,9 +3010,9 @@ begin
                 StrErrorMessages := StrErrorMessages + format('[Module:%d Analog Input Module]Invalid range defined for Data Module Words',[ModuleNumber]) + #13#10;
             end; // With
           end; // 0
-      1 : begin // Analog Output Module
-            lAnalogOutputModule := Modules[i] as TAnalogOutputModule;
-            with lAnalogOutputModule do
+      1 : begin // 8 Channel Analog Output Module
+            lAnalogOutput8Module := Modules[i] as TAnalogOutputModule;
+            with lAnalogOutput8Module do
             begin
               ConfigError := ((ModuleArrayElements[1] - ModuleArrayElements[0]) > 9) or ((ModuleArrayElements[1] - ModuleArrayElements[0]) < 1);
               if ConfigError then
@@ -3013,6 +3064,15 @@ begin
                 StrErrorMessages := StrErrorMessages + format('[Module:%d Main Module]Invalid range defined for Module Words',[ModuleNumber]) + #13#10;
             end; // With
           end; // 6
+      8 : begin // 4 Channel Analog Output Module
+            lAnalogOutput4Module := Modules[i] as TAnalogOutput4Module;
+            with lAnalogOutput4Module do
+            begin
+              ConfigError := ((ModuleArrayElements[1] - ModuleArrayElements[0]) > 9) or ((ModuleArrayElements[1] - ModuleArrayElements[0]) < 1);
+              if ConfigError then
+                StrErrorMessages := StrErrorMessages + format('[Module:%d Analog Output Module]Invalid range defined for Data Module Words',[ModuleNumber]) + #13#10;
+            end; // With
+          end; // 8
     end; // Case
   end; // For i
   if (StrErrorMessages <> '') then

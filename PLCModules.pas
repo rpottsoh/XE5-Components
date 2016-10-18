@@ -21,7 +21,8 @@ type
   TOnNewAnalogInputData = procedure(Sender : TObject; Module : TAnalogInputModule) of Object;
   TOnNewProcessorData = procedure(Sender : TObject; Module : TProcessorModule) of Object;
   TOnNewDigitalInputData = procedure(Sender : TObject; Module : TDigitalInputModule) of Object;
-  TOnNewAnalogOutputData = procedure(Sender : TObject; Module : TAnalogOutputModule) of Object;
+  TOnNewAnalogOutput4Data = procedure(Sender : TObject; Module : TAnalogOutput4Module) of Object;
+  TOnNewAnalogOutput8Data = procedure(Sender : TObject; Module : TAnalogOutputModule) of Object;
   TOnNewDigitalOutputData = procedure(Sender : TObject; Module : TDigitalOutputModule) of Object;
   TOnNewRelayedDigitalOutputData = procedure(Sender : TObject; Module : TRelayedDigitalOutputModule) of Object;
   TOnNewVirtualDriveData = procedure(Sender : TObject; Module : TDriveModule) of Object;
@@ -54,10 +55,17 @@ type
 
   T8CHAnalogChannelArray = array[0..7] of TAnalogChannel;
   T8CHGuageArray = array[0..7] of TDVM;
-  T8CHLableArray = array[0..15] of TLabel;
-  T8CHLEDArray   = array[0..15] of TDioLED;
+  T8CHLableArray = array[0..15] of TLabel;        // 2 Labels for each output channel (UnderRange and OverRange)
+  T8CHLEDArray   = array[0..15] of TDioLED;       // 2 Labels for each output channel (UnderRange and OverRange)
   T8CHInputFieldArray = array[0..7] of TOvcNumericField;
   T8CHButtonArray = array[0..7] of TButton;
+
+  T4CHAnalogChannelArray = array[0..3] of TAnalogChannel;
+  T4CHGuageArray         = array[0..3] of TDVM;
+  T4CHLableArray         = array[0..7] of TLabel;        // 2 Labels for each output channel (UnderRange and OverRange)
+  T4CHLEDArray           = array[0..7] of TDioLED;       // 2 Labels for each output channel (UnderRange and OverRange)
+  T4CHInputFieldArray    = array[0..3] of TOvcNumericField;
+  T4CHButtonArray        = array[0..3] of TButton;
 
 //  TProcLEDArray = array[0..63] of TDioLED;
 //  TProcLabelArray = array[0..63] of TLabel;
@@ -210,7 +218,7 @@ type
     btnZeroOutputs : TButton;
   private
     {Private Declarations}
-    FOnNewAnalogOutputData : TOnNewAnalogOutputData;
+    FOnNewAnalogOutput8Data : TOnNewAnalogOutput8Data;
     FAnalogChannels : T8CHAnalogChannelArray;
     FInputFieldArray : T8CHInputFieldArray;
     FDVMArray : T8CHGuageArray;
@@ -239,8 +247,47 @@ type
     property ModulePosition;
     property Interactive : Boolean read FInteractive write SetInteractive;
     property OutputTags : TStringList read FOutputTags write SetOutputTags;
-    property OnNewModuleData : TOnNewAnalogOutputData read FOnNewAnalogOutputData write FOnNewAnalogOutputData;
+    property OnNewModuleData : TOnNewAnalogOutput8Data read FOnNewAnalogOutput8Data write FOnNewAnalogOutput8Data;
   end; // TCompactLogix8ChAnalogOuputModule
+
+  TCompactLogix4ChAnalogOutputModule = class(TCompactLogixBaseModule)
+    LEDModuleError : TDioLED;
+    lblModuleError : TLabel;
+    lblModuleNumber : TLabel;
+    btnZeroOutputs : TButton;
+  private
+    {Private Declarations}
+    FOnNewAnalogOutput4Data : TOnNewAnalogOutput4Data;
+    FAnalogChannels : T4CHAnalogChannelArray;
+    FInputFieldArray : T4CHInputFieldArray;
+    FDVMArray : T4CHGuageArray;
+    FButtonArray : T4CHButtonArray;
+    FLabelArray : T4CHLableArray;
+    FLEDArray : T4CHLEDArray;
+    FOutputTags : TStringList;
+    FModuleError : Boolean;
+    FInteractive : Boolean;
+    procedure InputFieldClick(Sender : TObject);
+    procedure ButtonClick(Sender : TObject);
+    function GetChannel(Index : Integer) : TAnalogChannel;
+    procedure SetChannel(Index : Integer; Value : TAnalogChannel);
+    procedure SetOutputTags(OutputTags : TStringList);
+    procedure SetInteractive(Value : Boolean);
+  protected
+    {Protected Declarations}
+  public
+    {Public Declarations}
+    constructor Create(AOwner : TComponent); Override;
+    destructor Destroy; Override;
+    procedure NewModuleData(Sender : TObject; Module : TAnalogOutput4Module);
+    property ModuleError : Boolean read FModuleError;
+    property Channel[Index :integer] : TAnalogChannel read GetChannel write SetChannel;
+  published
+    property ModulePosition;
+    property Interactive : Boolean read FInteractive write SetInteractive;
+    property OutputTags : TStringList read FOutputTags write SetOutputTags;
+    property OnNewModuleData : TOnNewAnalogOutput4Data read FOnNewAnalogOutput4Data write FOnNewAnalogOutput4Data;
+  end; // TCompactLogix4ChAnalogOutputModule
 
   TCompactLogix16ChDigitalOutputModule = class(TCompactLogixBaseModule)
     lblModuleNumber : TLabel;
@@ -394,8 +441,8 @@ type
     {Public Declarations}
     constructor Create(AOwner : TComponent); Override;
     destructor Destroy; Override;
-    procedure NewModuleData(Sender : TObject; Module : TAnalogInputModule);
     property Channel[Index :integer] : TAnalogChannel read GetChannel write SetChannel;
+    procedure NewModuleData(Sender : TObject; Module : TAnalogInputModule);
   published
     property ModulePosition;
     property ModuleError : Boolean read FModuleError;
@@ -405,13 +452,14 @@ type
   TPLC8CHAnalogInputModule = TCompactLogix8ChAnalogInputModule;
 
   // PLC Back Plane Component
-  TProcessorModuleArray = array[0..MaximumModules] of TCompactLogixProcessorModule;
-  TAnalogInputModuleArray = array[0..MaximumModules] of TCompactLogix8ChAnalogInputModule;
-  TAnalogOutputModuleArray = array[0..MaximumModules] of TCompactLogix8ChAnalogOuputModule;
-  TDigitalInputModuleArray = array[0..MaximumModules] of TCompactLogix16ChDigitalInputModule;
-  TDigitalOutputModuleArray = array[0..MaximumModules] of TCompactLogix16ChDigitalOutputModule;
+  TProcessorModuleArray            = array[0..MaximumModules] of TCompactLogixProcessorModule;
+  TAnalogInputModuleArray          = array[0..MaximumModules] of TCompactLogix8ChAnalogInputModule;
+  TAnalogOutput4ModuleArray        = array[0..MaximumModules] of TCompactLogix4ChAnalogOutputModule;
+  TAnalogOutput8ModuleArray        = array[0..MaximumModules] of TCompactLogix8ChAnalogOuputModule;
+  TDigitalInputModuleArray         = array[0..MaximumModules] of TCompactLogix16ChDigitalInputModule;
+  TDigitalOutputModuleArray        = array[0..MaximumModules] of TCompactLogix16ChDigitalOutputModule;
   TRelayedDigitalOutputModuleArray = array[0..MaximumModules] of TCompactLogix8ChRelayedDigitalOutputModule;
-  TVirtualDriveModuleArray = array[0..MaximumModules] of TCompactLogixVirtualDriveModule;
+  TVirtualDriveModuleArray         = array[0..MaximumModules] of TCompactLogixVirtualDriveModule;
   // ---------------------------------------------------------------------------
 
   TVirtualPLCBackPlane = class(TComponent)
@@ -422,14 +470,16 @@ type
     FModulesInstalled : Integer;
     FProcModules : Integer;
     FAIModules : Integer;
-    FAOModules : Integer;
+    FAO4Modules : Integer;
+    FAO8Modules : Integer;
     FDIModules : Integer;
     FDOModules : Integer;
     FRDOModules : Integer;
     FDrvModules : Integer;
     FProcessorModules : TProcessorModuleArray;
     FAnalogInputModules : TAnalogInputModuleArray;
-    FAnalogOutputModules : TAnalogOutputModuleArray;
+    FAnalogOutput4Modules : TAnalogOutput4ModuleArray;
+    FAnalogOutput8Modules : TAnalogOutput8ModuleArray;
     FDigitalInputModules : TDigitalInputModuleArray;
     FDigitalOutputModules : TDigitalOutputModuleArray;
     FRelayedDigitalOutputModules : TRelayedDigitalOutputModuleArray;
@@ -1560,8 +1610,8 @@ begin
       end; // For i
       FModuleError := lModuleFault;
       LEDModuleError.Lit := lModuleFault;
-      if Assigned(FOnNewAnalogOutputData) then
-        FOnNewAnalogOutputData(Self,Module);
+      if Assigned(FOnNewAnalogOutput8Data) then
+        FOnNewAnalogOutput8Data(Self,Module);
     end; // If
   end; // With
 end; // TCompactLogix8ChAnalogOuputModule.NewModuleData
@@ -1826,6 +1876,319 @@ begin
   end; // If
 end; // TCompactLogix8ChAnalogOuputModule.Create
 
+procedure TCompactLogix4ChAnalogOutputModule.SetChannel(Index : Integer; Value : TAnalogChannel);
+begin
+  if (Index in [Low(FAnalogChannels)..High(FAnalogChannels)]) then
+    FAnalogChannels[Index] := Value;
+end; // TCompactLogix4ChAnalogOutputModule.SetChannel
+
+function TCompactLogix4ChAnalogOutputModule.GetChannel(Index : Integer) : TAnalogChannel;
+begin
+  if (Index in [Low(FAnalogChannels)..High(FAnalogChannels)]) then
+    Result := FAnalogChannels[Index];
+end; // TCompactLogix4ChAnalogOutputModule.GetChannel
+
+procedure TCompactLogix4ChAnalogOutputModule.ButtonClick(Sender : TObject);
+var
+  myTag : Integer;
+  Value : Integer;
+begin
+  myTag := (Sender as TButton).Tag;
+  if (FAnalogChannels[myTag].MaxDCInputVolts > 0) then
+    Value := Trunc((FInputFieldArray[myTag].AsFloat / FAnalogChannels[myTag].MaxDCInputVolts) * FAnalogChannels[myTag].MaxADRange)
+  else
+    Value := 0;
+  if Assigned(FPLCController) and (myTag <= (FOutputTags.Count - 1)) then
+    FPLCController.WriteToPLC(FOutputTags.Strings[myTag], 1, Value);
+end; // TCompactLogix4ChAnalogOuputModule.ButtonClick
+
+procedure TCompactLogix4ChAnalogOutputModule.InputFieldClick(Sender : TObject);
+var
+  i : Integer;
+begin
+  for i := 0 to 3 do
+  begin
+    FInputFieldArray[i].AsFloat := 0;
+    FButtonArray[i].Click;
+  end; // For i
+end; // TCompactLogix4ChAnalogOuputModule.InputFieldClick
+
+procedure TCompactLogix4ChAnalogOutputModule.SetOutputTags(OutputTags : TStringList);
+var
+  i : Integer;
+begin
+  FOutputTags.Clear;
+  for i := 0 to (OutputTags.Count - 1) do
+    FOutputTags.Add(OutputTags.Strings[i]);
+end; // TCompactLogix4ChAnalogOuputModule.SetOutputTags
+
+procedure TCompactLogix4ChAnalogOutputModule.SetInteractive(Value : Boolean);
+var
+  i : LongInt;
+begin
+  FInteractive := Value;
+  btnZeroOutputs.Enabled := FInteractive;
+  for i := Low(FInputFieldArray) to High(FInputFieldArray) do
+    FInputFieldArray[i].Enabled := FInteractive;
+  for i := Low(FButtonArray) to High(FButtonArray) do
+    FButtonArray[i].Enabled := FInteractive;
+end; // TCompactLogix4ChAnalogOuputModule.SetInteractive
+
+procedure TCompactLogix4ChAnalogOutputModule.NewModuleData(Sender : TObject; Module : TAnalogOutput4Module);
+var
+  i : Integer;
+  lModuleFault : Boolean;
+begin
+  lModuleFault := False;
+  with Module do
+  begin
+    if (ModuleNumber = FModulePosition) then
+    begin
+      LEDConnected.Lit := Not LEDConnected.Lit;
+      BaseModuleCaption := ModuleString;
+      lblModuleNumber.Caption := format('Module Number: %d',[ModuleNumber]);
+      for i := Low(FAnalogChannels) to High(FAnalogChannels) do
+      begin
+        if (FAnalogChannels[i].MaxADRange > 0) then
+          FAnalogChannels[i].Guage.value := (OutputData[i] / FAnalogChannels[i].MaxADRange) * FAnalogChannels[i].MaxDCInputVolts
+        else
+          FAnalogChannels[i].Guage.value := 0;
+        FAnalogChannels[i].OverRange := OverRange[i];
+        FAnalogChannels[i].UnderRange := UnderRange[i];
+        FAnalogChannels[i].LEDUR.Lit := UnderRange[i];
+        FAnalogChannels[i].LEDOR.Lit := OverRange[i];
+        FAnalogChannels[i].Faulted := OverRange[i] or UnderRange[i] or HighAlarm[i] or LowAlarm[i];
+        lModuleFault := lModuleFault or FAnalogChannels[i].Faulted;
+      end; // For i
+      FModuleError := lModuleFault;
+      LEDModuleError.Lit := lModuleFault;
+      if Assigned(FOnNewAnalogOutput4Data) then
+        FOnNewAnalogOutput4Data(Self,Module);
+    end; // If
+  end; // With
+end; // TCompactLogix4ChAnalogOuputModule.NewModuleData
+
+destructor TCompactLogix4ChAnalogOutputModule.Destroy;
+begin
+  FOutputTags.Free;
+  inherited Destroy;
+end; // TCompactLogix4ChAnalogOuputModule.Destory
+
+constructor TCompactLogix4ChAnalogOutputModule.Create(AOwner : TComponent);
+var
+  lFont : TFont;
+  lPen : TPen;
+  i : Integer;
+  lGuageFont : TFont;
+  myCount : Integer;
+begin
+  inherited Create(AOwner);
+  FModuleError := False;
+  FInteractive := True;
+  if (csAcceptsControls in ParentModule.ControlStyle) then
+  begin
+    lGuageFont := TFont.Create;
+    with lGuageFont do
+    begin
+      Name := 'Arial';
+      Color := clBlack;
+      Size := 8;
+    end; // With
+    lFont := TFont.Create;
+    with lFont do
+    begin
+      Color := clWhite;
+      Name := 'MS Sans Serif';
+      Size := 8;
+      Style := [];
+    end; // With
+    lPen := TPen.Create;
+    with lPen do
+    begin
+      Color := clBlack;
+      Mode := pmCopy;
+      Style := psSolid;
+      Width := 1;
+    end; // With
+    BaseModuleHeight := 158;
+    BaseModuleWidth := 675;
+    Font := lFont;
+    BaseModuleCaption := '4 Channel Analog Output';
+    LEDModuleError := TDioLED.Create(Self);
+    with LEDModuleError do
+    begin
+      Parent := Self;
+      Left := 8;
+      Top := 130;
+      LitColor := clRed;
+      UnlitColor := clBlack;
+      Height := 25;
+      Width := 121;
+      Pen.Color := clSilver;
+      Pen.Mode := pmCopy;
+      Pen.Style := psSolid;
+      Pen.Width := 1;
+      Shape := stRoundRect;
+    end; // With
+    lblModuleError := TLabel.Create(Self);
+    with lblModuleError do
+    begin
+      Parent := Self;
+      Left := 36;
+      Top := 135;
+      Font.Color := $00282828;
+      Font.Size := 8;
+      Height := 13;
+      Width := 60;
+      Caption := 'Module Error';
+      Transparent := True;
+    end; // With
+    lblModuleNumber := TLabel.Create(Self);
+    with lblModuleNumber do
+    begin
+      Parent := Self;
+      Left := 8;
+      Top := 20;
+      Font.Name := 'MS Sans Serif';
+      Font.Color := clWhite;
+      Font.Size := 8;
+      Height := 13;
+      Width := 78;
+      Caption := 'Module Number:';
+      Transparent := True;
+    end; // With
+    btnZeroOutputs := TButton.Create(Self);
+    with btnZeroOutputs do
+    begin
+      Parent := Self;
+      Top := 36;
+      Left := 8;
+      Height := 25;
+      Width := 121;
+      Font.Name := 'MS Sans Serif';
+      Font.Color := clBlack;
+      Font.Size := 8;
+      Caption := 'Zero Module Outputs';
+      OnClick := InputFieldClick;
+    end; // With
+    FOutputTags := TStringList.Create;
+    myCount := 0;
+    for i := 0 to 3 do
+    begin
+      FDVMArray[i] := TDVM.create(Self);
+      with FDVMArray[i] do
+      begin
+        Parent := Self;
+        if (i = 0) then // Top Left Guage
+        begin
+          Top := 16;
+          Left := 157;
+        end; // If
+        Top := FDVMArray[0].Top;
+        Left := FDVMArray[0].Left + (i * 125);
+        Height := 47;
+        Width := 125;
+        font.Size := 10;
+        font.Name := 'Arial';
+        font.Style := [fsBold];
+        font.Color := clBlack;
+        UnitsFont := lGuageFont;
+        TitleFont := lGuageFont;
+        Units := 'Volts';
+        Title := format('Channel %d',[i]);
+      end; // With
+      FInputFieldArray[i] := TOVCNumericField.Create(Self);
+      with FInputFieldArray[i] do
+      begin
+        Parent := Self;
+        if (i = 0) then
+        begin
+          Top := 64;
+          Left := 157;
+        end; // If
+        Top := FInputFieldArray[0].Top;
+        Left := FInputFieldArray[0].Left + (i * 125);
+        Height := 21;
+        Width := 67;
+        DataType := nftSingle;
+        PictureMask := '##.###';
+        RangeHi := '10';
+        RangeLo := '-10';
+        AsFloat := 0;
+        Font := lFont;
+        Font.Color := clBlack;
+        Font.Style := [fsBold];
+      end; // With
+      FButtonArray[i] := TButton.Create(Self);
+      with FButtonArray[i] do
+      begin
+        Parent := Self;
+        if (i = 0) then
+        begin
+          Top := 64;
+          Left := 225;
+        end; // If
+        Top := FButtonArray[0].Top;
+        Left := FButtonArray[0].Left + (i * 125);
+        Height := 21;
+        Width := 56;
+        Font := lFont;
+        Tag := i;
+        Caption := format('Set Chan%d',[i]);
+        OnClick := ButtonClick;
+      end; // With
+      FLabelArray[myCount] := TLabel.Create(FDVMArray[i]);
+      with FLabelArray[myCount] do // Under Range Label
+      begin
+        Parent := FDVMArray[i];
+        Top := 16;
+        Left := 18;
+        Font := lFont;
+        Font.Color := clBlack;
+        Caption := 'UR';
+      end; // With
+      FLabelArray[myCount + 1] := TLabel.Create(FDVMArray[i]);
+      with FLabelArray[myCount + 1] do // Over Range Label
+      begin
+        Parent := FDVMArray[i];
+        Top := 16;
+        Left := 91;
+        Font := lFont;
+        Font.Color := clBlack;
+        Caption := 'OR';
+      end; // With
+      FLEDArray[myCount] := TDioLED.Create(FDVMArray[i]);
+      with FLEDArray[myCount] do // Under Range LED
+      begin
+        Parent := FDVMArray[i];
+        Top := 16;
+        Left := 5;
+        Shape := stRoundRect;
+      end; // With
+      FLEDArray[myCount + 1] := TDioLED.Create(FDVMArray[i]);
+      with FLEDArray[myCount + 1] do  // Over Range LED
+      begin
+        Parent := FDVMArray[i];
+        Top := 16;
+        Left := 107;
+        Shape := stRoundRect;
+      end; // With
+      with FAnalogChannels[i] do
+      begin
+        Guage := FDVMArray[i];
+        LEDUR := FLEDArray[myCount];
+        LEDOR := FLEDarray[myCount + 1];
+        Faulted := False;
+        OverRange := False;
+        UnderRange := False;
+        MaxADRange := 0;
+        MaxDCInputVolts := 0;
+      end; // With
+      myCount := myCount + 2;
+    end; // For i
+  end; // If
+end; // TCompactLogix4ChAnalogOuputModule.Create
+
 procedure TCompactLogix16ChDigitalInputModule.BuildDigitalInputLEDArrayVertical;
 var
   i : LongInt;
@@ -2089,7 +2452,8 @@ var
   i : Integer;
   j : Integer;
   lAnalogInputModule : TAnalogInputModule;
-  lAnalogOutputModule : TAnalogOutputModule;
+  lAnalogOutput4Module : TAnalogOutput4Module;
+  lAnalogOutput8Module : TAnalogOutputModule;
   lDigitalInputModule : TDigitalInputModule;
   lDigitalOutputModule : TDigitalOutputModule;
   lRelayedDigitalOutputModule : TRelayedDigitalOutputModule;
@@ -2099,7 +2463,7 @@ begin
   for i := 0 to (ModuleCount - 1) do
   begin
     case ModuleTypes[i] of
-      0 : begin
+      0 : begin                           // Module Type 0: Analog Input Module
             lAnalogInputModule := Modules[i] as TAnalogInputModule;
             for j := 0 to FAIModules do
             begin
@@ -2107,54 +2471,65 @@ begin
                 FAnalogInputModules[j].NewModuleData(Self,lAnalogInputModule);
             end; // For j
           end; // 0
-      1 : begin
-            lAnalogOutputModule := Modules[i] as TAnalogOutputModule;
-            for j := 0 to FAOModules do
+      1 : begin                           // Module Type 1: 8 Channel Analog Output Module
+            lAnalogOutput8Module := Modules[i] as TAnalogOutputModule;
+            for j := 0 to FAO8Modules do
             begin
-              if (lAnalogOutputModule.ModuleNumber = FAnalogOutputModules[j].ModulePosition) then
-                FAnalogOutputModules[j].NewModuleData(Self,lAnalogOutputModule);
+              if (lAnalogOutput8Module.ModuleNumber = FAnalogOutput8Modules[j].ModulePosition) then
+                FAnalogOutput8Modules[j].NewModuleData(Self,lAnalogOutput8Module);
             end; // For j
-          end; // 0
-      2 : begin
+          end; // 1
+      2 : begin                           // Module Type 2: Digital Input Module
             lDigitalInputModule := Modules[i] as TDigitalInputModule;
             for j := 0 to FDIModules do
             begin
               if (lDigitalInputModule.ModuleNumber = FDigitalInputModules[j].ModulePosition) then
                 FDigitalInputModules[j].NewModuleData(Self,lDigitalInputModule);
             end; // For j
-          end; // 0
-      3 : begin
+          end; // 2
+      3 : begin                           // Module Type 3: Digital Output Module
             lDigitalOutputModule := Modules[i] as TDigitalOutputModule;
             for j := 0 to FDOModules do
             begin
               if (lDigitalOutputModule.ModuleNumber = FDigitalOutputModules[j].ModulePosition) then
                 FDigitalOutputModules[j].NewModuleData(Self,lDigitalOutputModule);
             end; // For j
-          end; // 0
-      4 : begin
+          end; // 3
+      4 : begin                           // Module Type 4: Relayed Digital Output Module
             lRelayedDigitalOutputModule := Modules[i] as TRelayedDigitalOutputModule;
             for j := 0 to FRDOModules do
             begin
               if (lRelayedDigitalOutputModule.ModuleNumber = FRelayedDigitalOutputModules[j].ModulePosition) then
                 FRelayedDigitalOutputModules[j].NewModuleData(Self,lRelayedDigitalOutputModule);
             end; // For j
-          end; // 0
-      5 : begin
+          end; // 4
+      5 : begin                           // Module Type 5: Drive Module
             lDriveModule := Modules[i] as TDriveModule;
             for j := 0 to FDrvModules do
             begin
               if (lDriveModule.ModuleNumber = FPowerFlex700DriveModules[j].ModulePosition) then
                 FPowerFlex700DriveModules[j].NewModuleData(Self,lDriveModule);
             end; // For j
-          end; // 0
-      6 : begin
+          end; // 5
+      6 : begin                           // Module Type 6: Processor Module
             lProcessorModule := Modules[i] as TProcessorModule;
             for j := 0 to FProcModules do
             begin
               if (lProcessorModule.ModuleNumber = FProcessorModules[j].ModulePosition) then
                 FProcessorModules[j].NewModuleData(Self,lProcessorModule);
             end; // For j
-          end; // 0
+          end; // 6
+      7 : begin                           // Module Type 7: Analog Output Voltage/Current Module
+            // Not currently used
+          end; // 7
+      8 : begin                           // Module Type 8: 4 Channel Analog Output Module
+            lAnalogOutput4Module := Modules[i] as TAnalogOutput4Module;
+            for j := 0 to FAO4Modules do
+            begin
+              if (lAnalogOutput4Module.ModuleNumber = FAnalogOutput4Modules[j].ModulePosition) then
+                FAnalogOutput4Modules[j].NewModuleData(Self,lAnalogOutput4Module);
+            end; // For j
+          end; // 8
     end; // Case;
   end; // For i
 end; // TVirtualPLCBackPlane.NewPLCData
@@ -2165,7 +2540,8 @@ var
   j : Integer;
   TempProcessorModules : TProcessorModuleArray;
   TempAnalogInputModules : TAnalogInputModuleArray;
-  TempAnalogOutputModules : TAnalogOutputModuleArray;
+  TempAnalogOutput4Modules : TAnalogOutput4ModuleArray;
+  TempAnalogOutput8Modules : TAnalogOutput8ModuleArray;
   TempDigitalInputModules : TDigitalInputModuleArray;
   TempDigitalOutputModules : TDigitalOutputModuleArray;
   TempRelayedDigitalOutputModules : TRelayedDigitalOutputModuleArray;
@@ -2233,20 +2609,40 @@ begin
   end; // If
   if (Module is TCompactLogix8ChAnalogOuputModule) then
   begin
-    for i := 0 to FAOModules do
+    for i := 0 to FAO8Modules do
     begin
-      TempAnalogOutPutModules := FAnalogOutputModules;
-      if (Module as TCompactLogix8ChAnalogOuputModule).ModulePosition = TempAnalogOutputModules[i].ModulePosition then
+      TempAnalogOutPut8Modules := FAnalogOutput8Modules;
+      if (Module as TCompactLogix8ChAnalogOuputModule).ModulePosition = TempAnalogOutput8Modules[i].ModulePosition then
       begin
-        TempAnalogOutputModules[i].Connected := False;
-        TempAnalogOutputModules[i] := Nil;
-        for j := i to (FAOModules - 1) do
+        TempAnalogOutput8Modules[i].Connected := False;
+        TempAnalogOutput8Modules[i] := Nil;
+        for j := i to (FAO8Modules - 1) do
         begin
-          TempAnalogOutputModules[j] := TempAnalogOutputModules[j + 1];
-          TempAnalogOutputModules[j + 1] := Nil;
+          TempAnalogOutput8Modules[j] := TempAnalogOutput8Modules[j + 1];
+          TempAnalogOutput8Modules[j + 1] := Nil;
         end; // for j
-        FAnalogOutputModules := TempAnalogOutputModules;
-        dec(FAOModules);
+        FAnalogOutput8Modules := TempAnalogOutput8Modules;
+        dec(FAO8Modules);
+        Break;
+      end // If
+    end; // For i
+  end; // If
+  if (Module is TCompactLogix4ChAnalogOutputModule) then
+  begin
+    for i := 0 to FAO4Modules do
+    begin
+      TempAnalogOutPut4Modules := FAnalogOutput4Modules;
+      if (Module as TCompactLogix4ChAnalogOutputModule).ModulePosition = TempAnalogOutput4Modules[i].ModulePosition then
+      begin
+        TempAnalogOutput4Modules[i].Connected := False;
+        TempAnalogOutput4Modules[i] := Nil;
+        for j := i to (FAO4Modules - 1) do
+        begin
+          TempAnalogOutput4Modules[j] := TempAnalogOutput4Modules[j + 1];
+          TempAnalogOutput4Modules[j + 1] := Nil;
+        end; // for j
+        FAnalogOutput4Modules := TempAnalogOutput4Modules;
+        dec(FAO4Modules);
         Break;
       end // If
     end; // For i
@@ -2311,7 +2707,8 @@ begin
       end // If
     end; // For i
   end; // If
-  FModulesInstalled := (FAIModules + 1) + (FProcModules + 1) + (FDIModules + 1) + (FAOModules + 1) + (FDOModules + 1) + (FRDOModules + 1) + (FDrvModules + 1);
+  FModulesInstalled := (FAIModules + 1) + (FProcModules + 1) + (FDIModules + 1) + (FAO8Modules + 1) +
+                       (FAO4Modules + 1) + (FDOModules + 1) + (FRDOModules + 1) + (FDrvModules + 1);
 end; // TVirtualPLCBackPlane.RemoveModuleFromBackPlane
 
 procedure TVirtualPLCBackPlane.AddModuleToBackPlane(Module : TCompactLogixBaseModule);
@@ -2337,12 +2734,19 @@ begin
     FDigitalInputModules[FDIModules].BackPlane := Self;
     FDigitalInputModules[FDIModules].Connected := True;
   end; // If
+  if (Module is TCompactLogix4ChAnalogOutputModule) then
+  begin
+    inc(FAO4Modules);
+    FAnalogOutput4Modules[FAO4Modules] := Module as TCompactLogix4ChAnalogOutputModule;
+    FAnalogOutput4Modules[FAO4Modules].BackPlane := Self;
+    FAnalogOutput4Modules[FAO4Modules].Connected := True;
+  end; // If
   if (Module is TCompactLogix8ChAnalogOuputModule) then
   begin
-    inc(FAOModules);
-    FAnalogOutputModules[FAOModules] := Module as TCompactLogix8ChAnalogOuputModule;
-    FAnalogOutputModules[FAOModules].BackPlane := Self;
-    FAnalogOutputModules[FAOModules].Connected := True;
+    inc(FAO8Modules);
+    FAnalogOutput8Modules[FAO8Modules] := Module as TCompactLogix8ChAnalogOuputModule;
+    FAnalogOutput8Modules[FAO8Modules].BackPlane := Self;
+    FAnalogOutput8Modules[FAO8Modules].Connected := True;
   end; // If
   if (Module is TCompactLogix16ChDigitalOutputModule) then
   begin
@@ -2365,7 +2769,8 @@ begin
     FPowerFlex700DriveModules[FDrvModules].BackPlane := Self;
     FPowerFlex700DriveModules[FDrvModules].Connected := True;
   end; // If
-  FModulesInstalled := (FAIModules + 1) + (FProcModules + 1) + (FDIModules + 1) + (FAOModules + 1) + (FDOModules + 1) + (FRDOModules + 1) + (FDrvModules + 1);
+  FModulesInstalled := (FAIModules + 1) + (FProcModules + 1) + (FDIModules + 1) + (FAO8Modules + 1) +
+                       (FAO4Modules + 1) + (FDOModules + 1) + (FRDOModules + 1) + (FDrvModules + 1);
 end; // TVirtualPLCBackPlane.AddModuleToBackPlane
 
 function TVirtualPLCBackPlane.GetPLCController : TCompactLogixPLC;
@@ -2400,7 +2805,8 @@ begin
   FModulesInstalled := 0;
   FProcModules := -1;
   FAIModules := -1;
-  FAOModules := -1;
+  FAO4Modules := -1;
+  FAO8Modules := -1;
   FDIModules := -1;
   FDOModules := -1;
   FRDOModules := -1;
@@ -2410,7 +2816,8 @@ begin
     FProcessorModules[i] := Nil;
     FAnalogInputModules[i] := Nil;
     FAnalogInputModules[i] := Nil;                               
-    FAnalogOutputModules[i] := Nil;
+    FAnalogOutput4Modules[i] := Nil;
+    FAnalogOutput8Modules[i] := Nil;
     FDigitalInputModules[i] := Nil;
     FDigitalOutputModules[i] := Nil;
     FRelayedDigitalOutputModules[i] := Nil;
@@ -2432,10 +2839,15 @@ begin
     if Assigned(FAnalogInputModules[i]) then
       FAnalogInputModules[i].OnControllerAssigned(Self);
   end; // For i
-  for i := Low(FAnalogOutputModules) to High(FAnalogOutputModules) do 
+  for i := Low(FAnalogOutput4Modules) to High(FAnalogOutput4Modules) do
   begin
-    if Assigned(FAnalogOutputModules[i]) then
-      FAnalogOutputModules[i].OnControllerAssigned(Self);
+    if Assigned(FAnalogOutput4Modules[i]) then
+      FAnalogOutput4Modules[i].OnControllerAssigned(Self);
+  end; // For i
+  for i := Low(FAnalogOutput8Modules) to High(FAnalogOutput8Modules) do
+  begin
+    if Assigned(FAnalogOutput8Modules[i]) then
+      FAnalogOutput8Modules[i].OnControllerAssigned(Self);
   end; // For i
   for i := Low(FDigitalInputModules) to High(FDigitalInputModules) do
   begin

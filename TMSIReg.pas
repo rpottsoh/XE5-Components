@@ -86,6 +86,7 @@ begin
                                               TCompactLogixVirtualDriveModule,
                                               TCompactLogix8ChRelayedDigitalOutputModule,
                                               TCompactLogix16ChDigitalOutputModule,
+                                              TCompactLogix4ChAnalogOutputModule,
                                               TCompactLogix8ChAnalogOuputModule,
                                               TCompactLogix16ChDigitalInputModule,
                                               TCompactLogixProcessorModule,
