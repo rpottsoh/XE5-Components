@@ -204,36 +204,37 @@ type
    TIDAndElementArray = array[0..0] of TIDAndElement;
 
    tSensorHist = packed record
-                   sensitivity : real;
-                   caldate     : LongInt;
+                     sensitivity : double;
+                     caldate     : LongInt;
+                     filler      : array[0..2047] of byte;
                  end;
    tSensorHistArray = array[1..20] of tSensorHist;
    XdcrRecType = packed RECORD
                   RefNum      : LongInt;    { RefNum = ID * 10 + Element }
-                  Sensitivity : real;
+                  Sensitivity : double;
                   LastCalDate : LongInt;
-                  BridgeRes   : real;
-                  Excitation  : real;
-                  Range       : real;
-                  OutputAtFS  : real;
+                  BridgeRes   : double;
+                  Excitation  : double;
+                  Range       : double;
+                  OutputAtFS  : double;
                   XType       : String[2];
                   Units       : String[3];
                   SerialNo    : String[12];
                   ModelNo     : String[15];
                   NextCalDate : LongInt;
-                  calrun      : boolean;
+                  calrun      : Boolean;
                   ExtraBool   : Boolean;
-                  ExtraWord   : word;
-                  CalPlusLev  : real;
-                  CalMinusLev : real;
+                  ExtraWord   : Word;
+                  CalPlusLev  : double;
+                  CalMinusLev : double;
                   NumCalRuns  : longint;
-                  CalGain     : real;
+                  CalGain     : double;
                   calhistcount: smallint;
                   sensorhist  : tSensorHistArray;
-                  Version     : string[9];
-                  Offset      : double;
+                  Version     : String[9];
+                  Offset      : Double;
                   Axis        : Integer;
-                  Extras      : string[88];
+                  filler      : array[0..2047] of byte;
                 end;
 
 {   oldXdcrRecType = RECORD  // from DTL Source Code
@@ -287,16 +288,16 @@ type
               SENLOC   : String[2];
               SENATT   : String[4];
               AXIS     : String[2];
-              ReqScale : real;
+              ReqScale : double;
               Spare    : WORD;
               Polarity : string[1];
-              CalcSensi: real;
+              CalcSensi: double;
               ReptFilt : String[4];
-              Gain     : real;
-              Excitation : real;
+              Gain     : double;
+              Excitation : double;
               OutPutAtFS,
-              Range : real;
-              MAXExcitation : real;
+              Range : double;
+              MAXExcitation : double;
               HardWare    : string[2];
               CCSlotNum : string[3];
               ZeroOfs   : single;
@@ -338,16 +339,16 @@ type
               OldSENLOC   : String[2];
               SENATT   : String[4];
               AXIS     : String[2];
-              ReqScale : real;
+              ReqScale : double;
               Spare    : WORD;
               Polarity : string[1];
-              CalcSensi: real;
+              CalcSensi: double;
               ReptFilt : String[4];
-              Gain     : real;
-              Excitation : real;
+              Gain     : double;
+              Excitation : double;
               OutPutAtFS,
-              Range : real;
-              MAXExcitation : real;
+              Range : double;
+              MAXExcitation : double;
               HardWare    : string[2];
               CCSlotNum : string[3];
               ZeroOfs   : single;
