@@ -71,8 +71,8 @@ type
     function GetAxis(index : integer):string;
     function GetHardware(index : integer):string;
     function GetccSlotnum(index : integer):string;
-    function GetExcitation(index : integer):real;
-    function GetMaxExcitation(index : integer):real;
+    function GetExcitation(index : integer):double;
+    function GetMaxExcitation(index : integer):double;
     function GetChanNum(index : integer):byte;
     function GetintChanNum(index : integer):integer;
     function getReptFilt(index : integer):string;
@@ -175,9 +175,9 @@ type
       read GetHardware;
     property ccSlotnum[ index : integer ] : string
       read GetccSlotnum;
-    property Excitation[ index : integer ] : real
+    property Excitation[ index : integer ] : double
       read GetExcitation;
-    property MaxExcitation[ index : integer ] : real
+    property MaxExcitation[ index : integer ] : double
       read GetMaxExcitation;
     property ChanNum[ index : integer ] : byte
       read GetChanNum;
@@ -1178,7 +1178,7 @@ begin
     result := '';
 end;
 
-function TCNFtoCFG.GetMaxExcitation(index : integer):real;
+function TCNFtoCFG.GetMaxExcitation(index : integer):double;
 begin
   if (index <= FMaxAnalogchan) and (index > 0) then
     result := ConfigRecords^[index - 1].MaxExcitation
@@ -1186,7 +1186,7 @@ begin
     result := 0.0;
 end;
 
-function TCNFtoCFG.GetExcitation(index : integer):real;
+function TCNFtoCFG.GetExcitation(index : integer):double;
 begin
   if (index <= FMaxAnalogchan) and (index > 0) then
     result := ConfigRecords^[index - 1].Excitation
