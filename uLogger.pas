@@ -22,7 +22,7 @@ type
   end;
 
   function NewLogger(aHeadings: array of string;
-      aChannelsToLog: array of boolean; aPath: string; aPrefix: string; aFilename: string=''): ILogger;
+      aChannelsToLog: array of boolean; aPath: string; aFilename: string=''; aPrefix: string=''): ILogger;
 
 implementation
 uses System.Classes, System.SysUtils;
@@ -47,6 +47,7 @@ type
     procedure setAverage(aValue: Boolean);
     function getaverageCount: integer;
     procedure setaverageCount(aValue: integer);
+    procedure InsertHeadings(aFilename: string);
     procedure UpdateLog;
   public
     constructor Create(aHeadings: array of string;
@@ -63,7 +64,7 @@ type
   end;
 
 function NewLogger(aHeadings: array of string;
-    aChannelsToLog: array of boolean; aPath: string; aPrefix: string; aFilename: string=''): ILogger;
+    aChannelsToLog: array of boolean; aPath: string; aFilename: string=''; aPrefix: string=''): ILogger;
 begin
   result := TLogger.create(aHeadings, aChannelsToLog, aPath, aPrefix, aFilename);
 end;
@@ -106,13 +107,10 @@ procedure TLogger.StartLog;
 var FullFilename: string;
     DateTime: string;
     fs: TFormatSettings;
-    rowStr: string;
-    chanHeading: string;
 begin
   if not fLogOpen then
   begin
     fs := TFormatSettings.Create;
-    // open log
     FullFilename := fPath;
     ForceDirectories(FullFilename);
     if not FullFilename.EndsWith('\') then
@@ -127,49 +125,54 @@ begin
     end
     else
       FullFilename := FullFilename + fPrefix + fFilename;
+    InsertHeadings(FullFilename);
+  end;
+end;
 
-    fLogFile := TStreamWriter.Create(FullFilename);
-    // write out date and time to first row and write column headings
-    try
-      fs := TFormatSettings.Create;
-      fLogFile.WriteLine(format('%s,%s,',[DateToStr(Date, fs),TimeToStr(Time, fs)]));
-      rowStr := '';
-      for chanHeading in fChannelHeadings do
-      begin
-        if rowStr.IsEmpty then
-          rowStr := chanHeading
-        else
-          rowStr := rowStr + format(',%s',[chanHeading]);
-      end;
-      fLogFile.WriteLine(rowStr);
-      fLogOpen := true;
-      fLogPaused := false;
-    except
-      fLogOpen := false;
-      fLogFile.DisposeOf;
+procedure TLogger.InsertHeadings(aFilename: string);
+var
+  fs: TFormatSettings;
+  rowStr: string;
+  chanHeading: string;
+begin
+  fLogFile := TStreamWriter.Create(aFilename);
+  try
+    fs := TFormatSettings.Create;
+    fLogFile.WriteLine(format('%s,%s,',[DateToStr(Date, fs),TimeToStr(Time, fs)]));
+    rowStr := '';
+    for chanHeading in fChannelHeadings do
+    begin
+      if rowStr.IsEmpty then
+        rowStr := chanHeading
+      else
+        rowStr := rowStr + format(',%s',[chanHeading]);
     end;
+    fLogFile.WriteLine(rowStr);
+    fLogOpen := true;
+    fLogPaused := false;
+  except
+    CloseLog;
   end;
 end;
 
 procedure TLogger.PauseLog;
 begin
-  if fLogOpen and not fLogPaused then
-    fLogPaused := true;
+  fLogPaused := fLogOpen;
 end;
 
 procedure TLogger.ResumeLog;
 begin
-  if fLogOpen and fLogPaused then
-    fLogPaused := false;
+  fLogPaused := false;
 end;
 
 procedure TLogger.CloseLog;
 begin
-  if fLogOpen then
+  fLogOpen := false;
+  fLogPaused := false;
+  if assigned(fLogFile) then
   begin
-    fLogOpen := false;
-    fLogPaused := false;
-    fLogFile.DisposeOf;
+    fLogFile.Close;
+    FreeAndNil(fLogFile);
   end;
 end;
 
@@ -177,6 +180,7 @@ procedure TLogger.UpdateLog;
 var pointValue: variant;
     rowStr: string;
     valStr: string;
+    vt: word;
 begin
   try
     if fLogOpen and not fLogPaused and fCurrentCount.ToBoolean then
@@ -188,7 +192,9 @@ begin
         rowStr := '';
         for pointValue in fChannelData do
         begin
-          case TVarData(pointValue).VType of
+          vt := TVarData(pointValue).VType;
+          case vt of
+            varBoolean : valStr := BoolToStr(TVarData(pointValue).VBoolean, True);
             varSmallInt: valStr := format('%d',[TVarData(pointValue).VSmallInt]);
             varInteger : valStr := format('%d',[TVarData(pointValue).VInteger]);
             varShortInt: valStr := format('%d',[TVarData(pointValue).VShortInt]);
@@ -204,7 +210,7 @@ begin
             varUString,
             varOleStr : valStr := format('%s',[TVarData(pointValue).VOleStr]);
           else
-            raise Exception.Create('Unable to determine VType in UpdateLog');
+            raise Exception.CreateFmt('VType of %d not supported in uLogger.UpdateLog',[vt]);
           end; //case
           if not rowStr.IsEmpty then
             valStr := ',' + valStr;
@@ -252,46 +258,54 @@ var idx: integer;
 begin
   if fLogOpen and not fLogPaused then
   begin
-    if fCurrentCount = 0 then
-    begin
-      fChannelData.Clear;
-      for idx := Low(aChanData) to High(aChanData) do
-        if fChannelsToLog[idx] then
-          fChannelData.Add(aChandata[idx]);
-      if fChannelData.Count > 0 then
-        inc(fCurrentCount);
-    end
-    else
-    begin
-      okIndex := -1;
-      for idx := low(aChanData) to high(aChanData) do
+    try
+      if fCurrentCount = 0 then
       begin
-        if fChannelsToLog[idx] then
+        fChannelData.Clear;
+        for idx := Low(aChanData) to High(aChanData) do
+          if fChannelsToLog[idx] then
+            fChannelData.Add(aChandata[idx]);
+        if fChannelData.Count > 0 then
+          inc(fCurrentCount);
+      end
+      else
+      begin
+        okIndex := -1;
+        for idx := low(aChanData) to high(aChanData) do
         begin
-          wrkVal := aChandata[idx];
-          vt := TVarData(wrkVal).VType;
-          inc(okIndex);
-          case vt of
-            varSmallInt,
-            varInteger,
-            varShortInt,
-            varByte,
-            varWord,
-            varLongWord,
-            varInt64,
-            varUInt64 : fChannelData[okIndex] := ((fChannelData[okIndex] * fCurrentCount) + wrkVal) div (fCurrentCount + 1);
+          if fChannelsToLog[idx] then
+          begin
+            wrkVal := aChandata[idx];
+            inc(okIndex);
+            vt := TVarData(wrkVal).VType;
+            case vt of
+              varSmallInt,
+              varInteger,
+              varShortInt,
+              varByte,
+              varWord,
+              varLongWord,
+              varInt64,
+              varUInt64 : fChannelData[okIndex] := ((fChannelData[okIndex] * fCurrentCount) + wrkVal) div (fCurrentCount + 1);
 
-            varSingle,
-            varDouble : fChannelData[okIndex] := ((fChannelData[okIndex] * fCurrentCount) + wrkVal) / (fCurrentCount + 1);
+              varSingle,
+              varDouble : fChannelData[okIndex] := ((fChannelData[okIndex] * fCurrentCount) + wrkVal) / (fCurrentCount + 1);
 
-            varUString,
-            varOleStr : fChannelData[okIndex] := wrkVal;
-          end; //case
+              varBoolean,
+              varUString,
+              varOleStr : fChannelData[okIndex] := wrkVal;
+            else
+              raise Exception.CreateFmt('VType of %d not supported in uLogger.ChannelData',[vt]);
+            end; //case
+          end;
         end;
+        inc(fCurrentCount);
       end;
-      inc(fCurrentCount);
+      UpdateLog;
+    except
+      CloseLog;
+      raise;
     end;
-    UpdateLog;
   end;
 end;
 
