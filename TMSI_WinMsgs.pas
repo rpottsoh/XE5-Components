@@ -36,6 +36,7 @@ const
   HSUTestRunScreenClosing_Msg        = MSG_Base + 3005; // HSU run screen closing
   CTTestRunScreenClosing_Msg         = MSG_Base + 3006; // CT Test control screen closing
   CustomPRATTestRunScreenClosing_Msg = MSG_Base + 3007; // Custom PRAT test control screen closing
+  CleatTestRunScreenClosing_Msg      = MSG_Base + 3008; // Cleat test control screen closing
   Close6AxisCalibrationScreen_Msg    = MSG_Base + 9999; // Multi axis calibration screen closing
   WM_LOADEDITOR_CLOSING              = MSG_Base + 4000; // Load editor closing
   WM_DRIVEEDITOR_CLOSING             = MSG_Base + 4001; // Drive editor closing
@@ -48,9 +49,9 @@ const
   WM_HSU_SpectraAnalysis_CLOSING     = MSG_Base + 5001; // HSU Spectra Analysis Closing
   WM_RR_ANALYSIS_CLOSING             = MSG_Base + 6001; // RR Analysis Software Closing
   WM_SpectraPAC_Setup_Wizard_Closing = MSG_Base + 7001; // SpectraPAC Setup Wizard Closing, AKA Uniformaty Wizard
-  WM_CoarseRoad_RunScreen_Closing    = MSG_Base + 8001; // SpectarPACcr Run Screen Closing
-  CustomSSCTestRunScreenClosing_Msg  = MSG_Base + 9001; // Stead State Cornering Run Screen Closing
-  SAFTestRunScreenClosing_Msg        = MSG_Base + 10001; // Sine Angle Frequence Test Run Screen Closing  
+  WM_CoarseRoad_RunScreen_Closing    = MSG_Base + 8001; // SpectraPACcr Run Screen Closing
+  CustomSSCTestRunScreenClosing_Msg  = MSG_Base + 9001; // Steady State Cornering Run Screen Closing
+  SAFTestRunScreenClosing_Msg        = MSG_Base + 10001;// Sweep Angle Frequency Test Run Screen Closing  
 
 type
   // The following call back identifiers need to be sent back to the calling program to
