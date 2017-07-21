@@ -22,10 +22,10 @@ type
   end;
 
   function NewLogger(aHeadings: array of string;
-      aChannelsToLog: array of boolean; aPath: string; aFilename: string=''; aPrefix: string=''): ILogger;
+      aChannelsToLog: array of boolean; aPath: string; aSampleRate: integer; aFilename: string=''; aPrefix: string=''): ILogger;
 
 implementation
-uses System.Classes, System.SysUtils;
+uses System.Classes, System.SysUtils, System.Math;
 
 type
   TLogger = class(TInterfacedObject, ILogger)
@@ -42,6 +42,7 @@ type
     fLogOpen: boolean;
     fLogPaused: boolean;
     fLogFile: TStreamWriter;
+    fSampleRate: integer;
     function getLogOpen: Boolean;
     function getAverage: Boolean;
     procedure setAverage(aValue: Boolean);
@@ -51,7 +52,8 @@ type
     procedure UpdateLog;
   public
     constructor Create(aHeadings: array of string;
-      aChannelsToLog: array of boolean; aPath: string; aPrefix: string; aFilename: string='');
+      aChannelsToLog: array of boolean; aPath: string; aPrefix: string;
+      aSampleRate: integer; aFilename: string='');
     destructor Destroy; override;
     procedure StartLog;
     procedure PauseLog;
@@ -64,17 +66,22 @@ type
   end;
 
 function NewLogger(aHeadings: array of string;
-    aChannelsToLog: array of boolean; aPath: string; aFilename: string=''; aPrefix: string=''): ILogger;
+    aChannelsToLog: array of boolean; aPath: string; aSampleRate: integer;
+    aFilename: string=''; aPrefix: string=''): ILogger;
 begin
-  result := TLogger.create(aHeadings, aChannelsToLog, aPath, aPrefix, aFilename);
+  result := TLogger.create(aHeadings, aChannelsToLog, aPath, aPrefix, aSampleRate, aFilename);
 end;
 
 constructor TLogger.Create(aHeadings: array of string; aChannelsToLog: array of boolean;
-  aPath: string; aPrefix: string; aFilename: string = '');
+  aPath: string; aPrefix: string; aSampleRate: integer; aFilename: string = '');
 var lHeading: string;
     lLogChan: boolean;
 begin
+  if aSampleRate <= 0 then
+    raise Exception.CreateFmt('Sample Rate Must Be > 0 Hz!  %d Hz is not allowed.',[aSampleRate]);
+
   inherited Create;
+  fSampleRate := aSampleRate;
   fLogOpen := false;
   fLogPaused := false;
   fPath := aPath;
@@ -138,7 +145,10 @@ begin
   fLogFile := TStreamWriter.Create(aFilename);
   try
     fs := TFormatSettings.Create;
-    fLogFile.WriteLine(format('%s,%s,',[DateToStr(Date, fs),TimeToStr(Time, fs)]));
+    fLogFile.WriteLine(format('%s,%s,Log Rate(Hz):,%0.3f',
+                                         [DateToStr(Date, fs),
+                                          TimeToStr(Time, fs),
+                                          fSampleRate / ifthen(fAverage, fAverageCount, 1)]));
     rowStr := '';
     for chanHeading in fChannelHeadings do
     begin
@@ -247,7 +257,10 @@ end;
 
 procedure TLogger.setaverageCount(aValue: Integer);
 begin
-  fAverageCount := aValue;
+  if aValue = 0 then
+    fAverageCount := 1
+  else
+    fAverageCount := abs(aValue);
 end;
 
 procedure TLogger.ChannelData(aChanData: array of variant);
